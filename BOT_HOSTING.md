@@ -1,0 +1,65 @@
+# Развёртывание CloudeGift на Bot-Hosting.net
+
+Интеграция рассчитана на Python Application: один процесс запускает FastAPI, Telegram-бот и Mini App с одного HTTPS-домена. Это убирает необходимость в отдельном web-сервисе и Caddy.
+
+## 1. Собрать Mini App перед загрузкой
+
+На компьютере нужен Node.js 20+ и npm. В Windows запусти `build-for-bothost.ps1`; на macOS/Linux:
+
+```bash
+./build-for-bothost.sh
+```
+
+Скрипт выполняет `npm ci` и `npm run build` в папке `frontend`, затем создаёт ZIP для загрузки рядом с папкой проекта.
+
+После этого должен существовать `frontend/dist/index.html`. Скрипт `package_for_bothost.py` включает исходный проект и `frontend/dist` в ZIP с файлами прямо в корне архива. Не добавляй `node_modules`, `.env`, `.venv` или файлы локальной базы.
+
+## 2. Создать приложение в Bot-Hosting
+
+1. В панели Bot-Hosting создай **Application** с runtime **Python** (рекомендуется 3.12).
+2. В качестве источника выбери ZIP/Archive и загрузи архив проекта.
+3. После распаковки убедись, что `bot_host.py` и корневой `requirements.txt` находятся в корне deployment, а не во вложенной дополнительной папке.
+4. В разделе Startup укажи Entry File: `bot_host.py`.
+5. Запусти приложение. Зависимости устанавливаются из корневого `requirements.txt`.
+
+Процесс слушает `0.0.0.0` и порт `SERVER_PORT`, который выдаёт Bot-Hosting. Не подставляй фиксированный порт из локальной разработки.
+
+## 3. Подключить домен и переменные окружения
+
+Включи HTTPS subdomain в панели, затем добавь следующие Environment Variables (секретные значения храни именно в панели):
+
+| Переменная | Значение |
+|---|---|
+| `BOT_TOKEN` | Токен Telegram-бота от @BotFather |
+| `WEBAPP_URL` | Полный HTTPS URL, выданный Bot-Hosting |
+| `JWT_SECRET` | Случайная строка не короче 48 символов |
+| `CORS_ORIGINS` | Тот же HTTPS URL, без завершающего `/` |
+| `ADMIN_TG_IDS` | Числовые Telegram ID администраторов через запятую |
+| `DATABASE_PATH` | `backend/data/cloudegift.sqlite3` |
+| `FREE_CASE_CHANNEL` | Username канала `@...` или его числовой ID `-100...` |
+| `FREE_CASE_CHANNEL_URL` | Публичная ссылка или invite-ссылка этого канала |
+| `BOT_USERNAME` | Username бота без `@` (необязательно) |
+| `GRAM_WALLET_ADDRESS` | Публичный адрес GRAM-кошелька (необязательно) |
+| `GRAM_JETTON_MASTER_ADDRESS` | Адрес master-контракта GRAM (необязательно) |
+
+`WEBAPP_URL` и `CORS_ORIGINS` должны совпадать с фактическим доменом, который выдал хостинг. `SERVER_PORT` задаётся самим Bot-Hosting; вручную его не переопределяй. В панели также настрой persistent storage/volume для `backend/data`, иначе SQLite база может потеряться при пересоздании deployment.
+
+## 4. Настроить Telegram
+
+1. Открой @BotFather и для этого бота выполни `/setdomain`, указав HTTPS-домен Mini App.
+2. Настрой Menu Button или Main App на тот же `WEBAPP_URL`.
+3. Добавь бота администратором в канал, если используется бесплатный кейс с проверкой подписки.
+4. Перезапусти deployment после изменения Environment Variables.
+5. Проверь `https://ТВОЙ-ДОМЕН/health`. Ответ должен содержать `"ok": true`.
+6. Открой Mini App только через кнопку Telegram-бота: сервер проверяет подлинность `Telegram.WebApp.initData`.
+
+## 5. Что не нужно загружать
+
+Не загружай `.env`, `frontend/node_modules`, `.venv`, `__pycache__`, локальную SQLite базу или приватные ключи. В архиве есть `.env.example` без секретов.
+
+## Важные ограничения
+
+- Из этого архива можно подготовить приложение к Bot-Hosting, но фактическую публикацию в твоём аккаунте выполнить нельзя без доступа к панели/твоего API-ключа и URL deployment.
+- Frontend build должен быть создан до загрузки. В выданном здесь архиве `frontend/dist` пока не включён: запусти `build-for-bothost.ps1` (или `./build-for-bothost.sh`) — он создаст готовый upload ZIP после сборки.
+- Проверь доступную память тарифа: FastAPI, aiogram и SQLite работают в одном Python-процессе.
+- Перед приёмом реальных платежей проверь Telegram Stars, правила цифровых товаров, выводы, восстановление БД и резервные копии на своём боте.
