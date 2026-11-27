@@ -17,6 +17,11 @@ BASE = Path(__file__).resolve().parent
 PROJECT = BASE.parent
 load_dotenv(PROJECT / ".env")
 DB_PATH = Path(os.getenv("DATABASE_PATH", str(BASE / "data" / "cloudegift.sqlite3")))
+# Bot-hosting may start the process with a working directory different from the
+# repository root. Resolve relative DATABASE_PATH values against PROJECT so
+# every startup/API connection uses the same persistent SQLite file.
+if not DB_PATH.is_absolute():
+    DB_PATH = PROJECT / DB_PATH
 BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 JWT_SECRET = os.getenv("JWT_SECRET", "CHANGE_ME_BEFORE_DEPLOYMENT")
 WEBAPP_URL = os.getenv("WEBAPP_URL", "https://example.com")
@@ -358,7 +363,18 @@ def public_config():
 
 @app.get("/health")
 def health():
-    return {"ok":True,"service":"CloudeGift API","time":now()}
+    # Safe deployment diagnostics: counts only, no user or payment data.
+    with connect() as con:
+        active_cases = con.execute("SELECT COUNT(*) FROM cases WHERE is_active=1").fetchone()[0]
+        total_cases = con.execute("SELECT COUNT(*) FROM cases").fetchone()[0]
+        gifts_count = con.execute("SELECT COUNT(*) FROM gifts").fetchone()[0]
+    return {
+        "ok": True,
+        "service": "CloudeGift API",
+        "time": now(),
+        "database": {"ready": True, "cases": total_cases, "active_cases": active_cases, "gifts": gifts_count},
+        "frontend": {"ready": (PROJECT / "frontend" / "dist" / "index.html").is_file()},
+    }
 
 @app.post("/api/auth/telegram")
 def auth(body: AuthBody):
