@@ -1,1 +1,0 @@
-"""CloudeGift Telegram bot package."""
