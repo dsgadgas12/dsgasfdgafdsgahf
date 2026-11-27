@@ -1,0 +1,1192 @@
+[
+  {
+    "id": "durovscap-1",
+    "name": "Durov's Cap",
+    "price_stars": 30339,
+    "price_usd": 402.0,
+    "image": "assets/gifts/durovscap-1/model.png",
+    "rarity": "Мифический",
+    "source_archive": "gifts_6.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "preciouspeach-1",
+    "name": "Precious Peach",
+    "price_stars": 21985,
+    "price_usd": 278.0,
+    "image": "assets/gifts/preciouspeach-1/model.png",
+    "rarity": "Легендарный",
+    "source_archive": "gifts_6.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "scaredcat-1",
+    "name": "Scared Cat",
+    "price_stars": 20003,
+    "price_usd": 268.0,
+    "image": "assets/gifts/scaredcat-1/model.png",
+    "rarity": "Легендарный",
+    "source_archive": "gifts_6.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "heroichelmet-1",
+    "name": "Heroic Helmet",
+    "price_stars": 13810,
+    "price_usd": 187.0,
+    "image": "assets/gifts/heroichelmet-1/model.png",
+    "rarity": "Легендарный",
+    "source_archive": "gifts_6.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "astralshard-1",
+    "name": "Astral Shard",
+    "price_stars": 11023,
+    "price_usd": 138.0,
+    "image": "assets/gifts/astralshard-1/model.png",
+    "rarity": "Эпический",
+    "source_archive": "gifts_6.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "lootbag-1",
+    "name": "Loot Bag",
+    "price_stars": 10215,
+    "price_usd": 139.0,
+    "image": "assets/gifts/lootbag-1/model.png",
+    "rarity": "Эпический",
+    "source_archive": "gifts_6.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "nailbracelet-1",
+    "name": "Nail Bracelet",
+    "price_stars": 9227,
+    "price_usd": 138.0,
+    "image": "assets/gifts/nailbracelet-1/model.png",
+    "rarity": "Эпический",
+    "source_archive": "gifts_6.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "westsidesign-1",
+    "name": "Westside Sign",
+    "price_stars": 9289,
+    "price_usd": 136.0,
+    "image": "assets/gifts/westsidesign-1/model.png",
+    "rarity": "Эпический",
+    "source_archive": "gifts_6.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "durovsglasses-1",
+    "name": "Durov's Glasses",
+    "price_stars": 11147,
+    "price_usd": 137.0,
+    "image": "assets/gifts/durovsglasses-1/model.png",
+    "rarity": "Эпический",
+    "source_archive": "gifts_6.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "mightyarm-1",
+    "name": "Mighty Arm",
+    "price_stars": 9289,
+    "price_usd": 126.0,
+    "image": "assets/gifts/mightyarm-1/model.png",
+    "rarity": "Эпический",
+    "source_archive": "gifts_6.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "perfumebottle-1",
+    "name": "Perfume Bottle",
+    "price_stars": 6193,
+    "price_usd": 84.0,
+    "image": "assets/gifts/perfumebottle-1/model.png",
+    "rarity": "Эпический",
+    "source_archive": "gifts_6.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "lowrider-1",
+    "name": "Low Rider",
+    "price_stars": 5573,
+    "price_usd": 84.0,
+    "image": "assets/gifts/lowrider-1/model.png",
+    "rarity": "Эпический",
+    "source_archive": "gifts_6.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "iongem-1",
+    "name": "Ion Gem",
+    "price_stars": 6002,
+    "price_usd": 85.0,
+    "image": "assets/gifts/iongem-1/model.png",
+    "rarity": "Эпический",
+    "source_archive": "gifts_6.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "artisanbrick-1",
+    "name": "Artisan Brick",
+    "price_stars": 6063,
+    "price_usd": 79.0,
+    "image": "assets/gifts/artisanbrick-1/model.png",
+    "rarity": "Эпический",
+    "source_archive": "gifts_6.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "minioscar-1",
+    "name": "Mini Oscar",
+    "price_stars": 5171,
+    "price_usd": 74.0,
+    "image": "assets/gifts/minioscar-1/model.png",
+    "rarity": "Редкий",
+    "source_archive": "gifts_6.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "gemsignet-1",
+    "name": "Gem Signet",
+    "price_stars": 4805,
+    "price_usd": 71.0,
+    "image": "assets/gifts/gemsignet-1/model.png",
+    "rarity": "Редкий",
+    "source_archive": "gifts_6.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "swisswatch-1",
+    "name": "Swiss Watch",
+    "price_stars": 4645,
+    "price_usd": 65.0,
+    "image": "assets/gifts/swisswatch-1/model.png",
+    "rarity": "Редкий",
+    "source_archive": "gifts_6.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "magicpotion-1",
+    "name": "Magic Potion",
+    "price_stars": 5258,
+    "price_usd": 64.0,
+    "image": "assets/gifts/magicpotion-1/model.png",
+    "rarity": "Редкий",
+    "source_archive": "gifts_6.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "kissedfrog-1",
+    "name": "Kissed Frog",
+    "price_stars": 4149,
+    "price_usd": 53.0,
+    "image": "assets/gifts/kissedfrog-1/model.png",
+    "rarity": "Редкий",
+    "source_archive": "gifts_6.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "sharptongue-1",
+    "name": "Sharp Tongue",
+    "price_stars": 3685,
+    "price_usd": 50.0,
+    "image": "assets/gifts/sharptongue-1/model.png",
+    "rarity": "Редкий",
+    "source_archive": "gifts_6.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "bondedring-1",
+    "name": "Bonded Ring",
+    "price_stars": 3468,
+    "price_usd": 48.0,
+    "image": "assets/gifts/bondedring-1/model.png",
+    "rarity": "Редкий",
+    "source_archive": "gifts_4.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "vintagecigar-1",
+    "name": "Vintage Cigar",
+    "price_stars": 3282,
+    "price_usd": 45.0,
+    "image": "assets/gifts/vintagecigar-1/model.png",
+    "rarity": "Редкий",
+    "source_archive": "gifts_4.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "voodoodoll-1",
+    "name": "Voodoo Doll",
+    "price_stars": 3092,
+    "price_usd": 43.0,
+    "image": "assets/gifts/voodoodoll-1/model.png",
+    "rarity": "Редкий",
+    "source_archive": "gifts_4.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "nekohelmet-1",
+    "name": "Neko Helmet",
+    "price_stars": 3035,
+    "price_usd": 42.0,
+    "image": "assets/gifts/nekohelmet-1/model.png",
+    "rarity": "Редкий",
+    "source_archive": "gifts_4.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "diamondring-1",
+    "name": "Diamond Ring",
+    "price_stars": 2786,
+    "price_usd": 41.0,
+    "image": "assets/gifts/diamondring-1/model.png",
+    "rarity": "Редкий",
+    "source_archive": "gifts_4.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "signetring-1",
+    "name": "Signet Ring",
+    "price_stars": 2662,
+    "price_usd": 38.0,
+    "image": "assets/gifts/signetring-1/model.png",
+    "rarity": "Редкий",
+    "source_archive": "gifts_4.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "toybear-1",
+    "name": "Toy Bear",
+    "price_stars": 2719,
+    "price_usd": 39.0,
+    "image": "assets/gifts/toybear-1/model.png",
+    "rarity": "Редкий",
+    "source_archive": "gifts_4.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "genielamp-1",
+    "name": "Genie Lamp",
+    "price_stars": 2724,
+    "price_usd": 37.0,
+    "image": "assets/gifts/genielamp-1/model.png",
+    "rarity": "Редкий",
+    "source_archive": "gifts_4.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "electricskull-1",
+    "name": "Electric Skull",
+    "price_stars": 2311,
+    "price_usd": 31.0,
+    "image": "assets/gifts/electricskull-1/model.png",
+    "rarity": "Редкий",
+    "source_archive": "gifts_4.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "eternalrose-1",
+    "name": "Eternal Rose",
+    "price_stars": 2167,
+    "price_usd": 31.0,
+    "image": "assets/gifts/eternalrose-1/model.png",
+    "rarity": "Редкий",
+    "source_archive": "gifts_4.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "rarebird-1",
+    "name": "Rare Bird",
+    "price_stars": 2167,
+    "price_usd": 30.0,
+    "image": "assets/gifts/rarebird-1/model.png",
+    "rarity": "Редкий",
+    "source_archive": "gifts_4.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "khabibspapakha-1",
+    "name": "Khabib's Papakha",
+    "price_stars": 2155,
+    "price_usd": 31.0,
+    "image": "assets/gifts/khabibspapakha-1/model.png",
+    "rarity": "Редкий",
+    "source_archive": "gifts_4.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "blingbinky-1",
+    "name": "Bling Binky",
+    "price_stars": 1981,
+    "price_usd": 25.0,
+    "image": "assets/gifts/blingbinky-1/model.png",
+    "rarity": "Редкий",
+    "source_archive": "gifts_4.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "cupidcharm-1",
+    "name": "Cupid Charm",
+    "price_stars": 1795,
+    "price_usd": 25.0,
+    "image": "assets/gifts/cupidcharm-1/model.png",
+    "rarity": "Редкий",
+    "source_archive": "gifts_4.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "skystilettos-1",
+    "name": "Sky Stilettos",
+    "price_stars": 1651,
+    "price_usd": 24.0,
+    "image": "assets/gifts/skystilettos-1/model.png",
+    "rarity": "Редкий",
+    "source_archive": "gifts_4.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "ufcstrike-1",
+    "name": "UFC Strike",
+    "price_stars": 1301,
+    "price_usd": 19.0,
+    "image": "assets/gifts/ufcstrike-1/model.png",
+    "rarity": "Необычный",
+    "source_archive": "gifts_4.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "trappedheart-1",
+    "name": "Trapped Heart",
+    "price_stars": 1399,
+    "price_usd": 19.0,
+    "image": "assets/gifts/trappedheart-1/model.png",
+    "rarity": "Необычный",
+    "source_archive": "gifts_4.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "ionicdryer-1",
+    "name": "Ionic Dryer",
+    "price_stars": 1238,
+    "price_usd": 18.0,
+    "image": "assets/gifts/ionicdryer-1/model.png",
+    "rarity": "Необычный",
+    "source_archive": "gifts_4.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "snoopcigar-1",
+    "name": "Snoop Cigar",
+    "price_stars": 1214,
+    "price_usd": 17.0,
+    "image": "assets/gifts/snoopcigar-1/model.png",
+    "rarity": "Необычный",
+    "source_archive": "gifts_4.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "lovepotion-1",
+    "name": "Love Potion",
+    "price_stars": 1239,
+    "price_usd": 17.0,
+    "image": "assets/gifts/lovepotion-1/model.png",
+    "rarity": "Необычный",
+    "source_archive": "gifts_4.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "luckylocket-1",
+    "name": "Lucky Locket",
+    "price_stars": 1077,
+    "price_usd": 14.0,
+    "image": "assets/gifts/luckylocket-1/model.png",
+    "rarity": "Необычный",
+    "source_archive": "gifts_8.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "recordplayer-1",
+    "name": "Record Player",
+    "price_stars": 990,
+    "price_usd": 14.0,
+    "image": "assets/gifts/recordplayer-1/model.png",
+    "rarity": "Необычный",
+    "source_archive": "gifts_8.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "valentinebox-1",
+    "name": "Valentine Box",
+    "price_stars": 960,
+    "price_usd": 14.0,
+    "image": "assets/gifts/valentinebox-1/model.png",
+    "rarity": "Необычный",
+    "source_archive": "gifts_8.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "crystalball-1",
+    "name": "Crystal Ball",
+    "price_stars": 1041,
+    "price_usd": 14.0,
+    "image": "assets/gifts/crystalball-1/model.png",
+    "rarity": "Необычный",
+    "source_archive": "gifts_8.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "skullflower-1",
+    "name": "Skull Flower",
+    "price_stars": 921,
+    "price_usd": 13.0,
+    "image": "assets/gifts/skullflower-1/model.png",
+    "rarity": "Необычный",
+    "source_archive": "gifts_8.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "flyingbroom-1",
+    "name": "Flying Broom",
+    "price_stars": 929,
+    "price_usd": 13.0,
+    "image": "assets/gifts/flyingbroom-1/model.png",
+    "rarity": "Необычный",
+    "source_archive": "gifts_8.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "madpumpkin-1",
+    "name": "Mad Pumpkin",
+    "price_stars": 927,
+    "price_usd": 13.0,
+    "image": "assets/gifts/madpumpkin-1/model.png",
+    "rarity": "Необычный",
+    "source_archive": "gifts_8.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "lovecandle-1",
+    "name": "Love Candle",
+    "price_stars": 813,
+    "price_usd": 12.0,
+    "image": "assets/gifts/lovecandle-1/model.png",
+    "rarity": "Необычный",
+    "source_archive": "gifts_8.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "sakuraflower-1",
+    "name": "Sakura Flower",
+    "price_stars": 805,
+    "price_usd": 12.0,
+    "image": "assets/gifts/sakuraflower-1/model.png",
+    "rarity": "Необычный",
+    "source_archive": "gifts_8.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "jinglebells-1",
+    "name": "Jingle Bells",
+    "price_stars": 743,
+    "price_usd": 11.0,
+    "image": "assets/gifts/jinglebells-1/model.png",
+    "rarity": "Необычный",
+    "source_archive": "gifts_8.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "tophat-1",
+    "name": "Top Hat",
+    "price_stars": 743,
+    "price_usd": 10.0,
+    "image": "assets/gifts/tophat-1/model.png",
+    "rarity": "Необычный",
+    "source_archive": "gifts_8.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "hangingstar-1",
+    "name": "Hanging Star",
+    "price_stars": 743,
+    "price_usd": 10.0,
+    "image": "assets/gifts/hangingstar-1/model.png",
+    "rarity": "Необычный",
+    "source_archive": "gifts_8.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "jellybunny-1",
+    "name": "Jelly Bunny",
+    "price_stars": 721,
+    "price_usd": 10.0,
+    "image": "assets/gifts/jellybunny-1/model.png",
+    "rarity": "Необычный",
+    "source_archive": "gifts_8.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "sleighbell-1",
+    "name": "Sleigh Bell",
+    "price_stars": 693,
+    "price_usd": 10.0,
+    "image": "assets/gifts/sleighbell-1/model.png",
+    "rarity": "Необычный",
+    "source_archive": "gifts_8.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "berrybox-1",
+    "name": "Berry Box",
+    "price_stars": 681,
+    "price_usd": 10.0,
+    "image": "assets/gifts/berrybox-1/model.png",
+    "rarity": "Необычный",
+    "source_archive": "gifts_8.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "bunnymuffin-1",
+    "name": "Bunny Muffin",
+    "price_stars": 681,
+    "price_usd": 9.0,
+    "image": "assets/gifts/bunnymuffin-1/model.png",
+    "rarity": "Необычный",
+    "source_archive": "gifts_8.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "snowmittens-1",
+    "name": "Snow Mittens",
+    "price_stars": 619,
+    "price_usd": 9.0,
+    "image": "assets/gifts/snowmittens-1/model.png",
+    "rarity": "Необычный",
+    "source_archive": "gifts_8.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "evileye-1",
+    "name": "Evil Eye",
+    "price_stars": 619,
+    "price_usd": 9.0,
+    "image": "assets/gifts/evileye-1/model.png",
+    "rarity": "Необычный",
+    "source_archive": "gifts_8.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "jollychimp-1",
+    "name": "Jolly Chimp",
+    "price_stars": 619,
+    "price_usd": 9.0,
+    "image": "assets/gifts/jollychimp-1/model.png",
+    "rarity": "Необычный",
+    "source_archive": "gifts_8.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "finepen-1",
+    "name": "Fine Pen",
+    "price_stars": 657,
+    "price_usd": 8.0,
+    "image": "assets/gifts/finepen-1/model.png",
+    "rarity": "Необычный",
+    "source_archive": "gifts_8.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "joyfulbundle-1",
+    "name": "Joyful Bundle",
+    "price_stars": 667,
+    "price_usd": 9.0,
+    "image": "assets/gifts/joyfulbundle-1/model.png",
+    "rarity": "Необычный",
+    "source_archive": "gifts_9.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "santahat-1",
+    "name": "Santa Hat",
+    "price_stars": 613,
+    "price_usd": 9.0,
+    "image": "assets/gifts/santahat-1/model.png",
+    "rarity": "Необычный",
+    "source_archive": "gifts_9.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "mythmask-1",
+    "name": "Myth Mask",
+    "price_stars": 613,
+    "price_usd": 9.0,
+    "image": "assets/gifts/mythmask-1/model.png",
+    "rarity": "Необычный",
+    "source_archive": "gifts_9.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "snowglobe-1",
+    "name": "Snow Globe",
+    "price_stars": 551,
+    "price_usd": 8.0,
+    "image": "assets/gifts/snowglobe-1/model.png",
+    "rarity": "Необычный",
+    "source_archive": "gifts_9.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "spyagaric-1",
+    "name": "Spy Agaric",
+    "price_stars": 557,
+    "price_usd": 7.0,
+    "image": "assets/gifts/spyagaric-1/model.png",
+    "rarity": "Необычный",
+    "source_archive": "gifts_9.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "surgeboard-1",
+    "name": "Surge Board",
+    "price_stars": 545,
+    "price_usd": 7.0,
+    "image": "assets/gifts/surgeboard-1/model.png",
+    "rarity": "Необычный",
+    "source_archive": "gifts_9.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "moonpendant-1",
+    "name": "Moon Pendant",
+    "price_stars": 495,
+    "price_usd": 7.0,
+    "image": "assets/gifts/moonpendant-1/model.png",
+    "rarity": "Необычный",
+    "source_archive": "gifts_9.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "lightsword-1",
+    "name": "Light Sword",
+    "price_stars": 495,
+    "price_usd": 7.0,
+    "image": "assets/gifts/lightsword-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_9.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "inputkey-1",
+    "name": "Input Key",
+    "price_stars": 501,
+    "price_usd": 7.0,
+    "image": "assets/gifts/inputkey-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_9.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "eternalcandle-1",
+    "name": "Eternal Candle",
+    "price_stars": 465,
+    "price_usd": 7.0,
+    "image": "assets/gifts/eternalcandle-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_9.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "faithamulet-1",
+    "name": "Faith Amulet",
+    "price_stars": 483,
+    "price_usd": 7.0,
+    "image": "assets/gifts/faithamulet-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_9.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "swagbag-1",
+    "name": "Swag Bag",
+    "price_stars": 438,
+    "price_usd": 6.0,
+    "image": "assets/gifts/swagbag-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_9.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "libertyfigure-1",
+    "name": "Liberty Figure",
+    "price_stars": 465,
+    "price_usd": 7.0,
+    "image": "assets/gifts/libertyfigure-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_9.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "snoopdogg-1",
+    "name": "Snoop Dogg",
+    "price_stars": 482,
+    "price_usd": 6.0,
+    "image": "assets/gifts/snoopdogg-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_9.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "springbasket-1",
+    "name": "Spring Basket",
+    "price_stars": 443,
+    "price_usd": 6.0,
+    "image": "assets/gifts/springbasket-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_9.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "bowtie-1",
+    "name": "Bow Tie",
+    "price_stars": 438,
+    "price_usd": 6.0,
+    "image": "assets/gifts/bowtie-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_9.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "deskcalendar-1",
+    "name": "Desk Calendar",
+    "price_stars": 448,
+    "price_usd": 6.0,
+    "image": "assets/gifts/deskcalendar-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_9.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "lushbouquet-1",
+    "name": "Lush Bouquet",
+    "price_stars": 443,
+    "price_usd": 6.0,
+    "image": "assets/gifts/lushbouquet-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_9.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "witchhat-1",
+    "name": "Witch Hat",
+    "price_stars": 453,
+    "price_usd": 6.0,
+    "image": "assets/gifts/witchhat-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_9.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "cookieheart-1",
+    "name": "Cookie Heart",
+    "price_stars": 438,
+    "price_usd": 6.0,
+    "image": "assets/gifts/cookieheart-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_9.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "restlessjar-1",
+    "name": "Restless Jar",
+    "price_stars": 452,
+    "price_usd": 6.0,
+    "image": "assets/gifts/restlessjar-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_10.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "cloverpin-1",
+    "name": "Clover Pin",
+    "price_stars": 443,
+    "price_usd": 6.0,
+    "image": "assets/gifts/cloverpin-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_10.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "stellarrocket-1",
+    "name": "Stellar Rocket",
+    "price_stars": 448,
+    "price_usd": 6.0,
+    "image": "assets/gifts/stellarrocket-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_10.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "hexpot-1",
+    "name": "Hex Pot",
+    "price_stars": 438,
+    "price_usd": 5.0,
+    "image": "assets/gifts/hexpot-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_10.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "homemadecake-1",
+    "name": "Homemade Cake",
+    "price_stars": 443,
+    "price_usd": 5.0,
+    "image": "assets/gifts/homemadecake-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_10.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "winterwreath-1",
+    "name": "Winter Wreath",
+    "price_stars": 429,
+    "price_usd": 6.0,
+    "image": "assets/gifts/winterwreath-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_10.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "moussecake-1",
+    "name": "Mousse Cake",
+    "price_stars": 453,
+    "price_usd": 5.0,
+    "image": "assets/gifts/moussecake-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_10.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "prettyposy-1",
+    "name": "Pretty Posy",
+    "price_stars": 448,
+    "price_usd": 6.0,
+    "image": "assets/gifts/prettyposy-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_10.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "partysparkler-1",
+    "name": "Party Sparkler",
+    "price_stars": 438,
+    "price_usd": 6.0,
+    "image": "assets/gifts/partysparkler-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_10.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "gingercookie-1",
+    "name": "Ginger Cookie",
+    "price_stars": 443,
+    "price_usd": 5.0,
+    "image": "assets/gifts/gingercookie-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_10.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "spicedwine-1",
+    "name": "Spiced Wine",
+    "price_stars": 448,
+    "price_usd": 5.0,
+    "image": "assets/gifts/spicedwine-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_10.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "bdaycandle-1",
+    "name": "B-Day Candle",
+    "price_stars": 438,
+    "price_usd": 5.0,
+    "image": "assets/gifts/bdaycandle-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_10.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "starnotepad-1",
+    "name": "Star Notepad",
+    "price_stars": 453,
+    "price_usd": 5.0,
+    "image": "assets/gifts/starnotepad-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_10.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "holidaydrink-1",
+    "name": "Holiday Drink",
+    "price_stars": 443,
+    "price_usd": 5.0,
+    "image": "assets/gifts/holidaydrink-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_10.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "timelessbook-1",
+    "name": "Timeless Book",
+    "price_stars": 448,
+    "price_usd": 5.0,
+    "image": "assets/gifts/timelessbook-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_10.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "tamagadget-1",
+    "name": "Tama Gadget",
+    "price_stars": 438,
+    "price_usd": 5.0,
+    "image": "assets/gifts/tamagadget-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_10.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "moneypot-1",
+    "name": "Money Pot",
+    "price_stars": 443,
+    "price_usd": 5.0,
+    "image": "assets/gifts/moneypot-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_10.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "freshsocks-1",
+    "name": "Fresh Socks",
+    "price_stars": 453,
+    "price_usd": 5.0,
+    "image": "assets/gifts/freshsocks-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_10.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "moodpack-1",
+    "name": "Mood Pack",
+    "price_stars": 448,
+    "price_usd": 5.0,
+    "image": "assets/gifts/moodpack-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_10.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "jesterhat-1",
+    "name": "Jester Hat",
+    "price_stars": 438,
+    "price_usd": 5.0,
+    "image": "assets/gifts/jesterhat-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_10.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "hypnolollipop-1",
+    "name": "Hypno Lollipop",
+    "price_stars": 443,
+    "price_usd": 5.0,
+    "image": "assets/gifts/hypnolollipop-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_11.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "jackinthebox-1",
+    "name": "Jack-in-the-Box",
+    "price_stars": 432,
+    "price_usd": 5.0,
+    "image": "assets/gifts/jackinthebox-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_11.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "victorymedal-1",
+    "name": "Victory Medal",
+    "price_stars": 448,
+    "price_usd": 5.0,
+    "image": "assets/gifts/victorymedal-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_11.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "happybrownie-1",
+    "name": "Happy Brownie",
+    "price_stars": 438,
+    "price_usd": 5.0,
+    "image": "assets/gifts/happybrownie-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_11.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "petsnake-1",
+    "name": "Pet Snake",
+    "price_stars": 453,
+    "price_usd": 5.0,
+    "image": "assets/gifts/petsnake-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_11.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "snakebox-1",
+    "name": "Snake Box",
+    "price_stars": 400,
+    "price_usd": 3.0,
+    "image": "assets/gifts/snakebox-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_11.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "icecream-1",
+    "name": "Ice Cream",
+    "price_stars": 443,
+    "price_usd": 5.0,
+    "image": "assets/gifts/icecream-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_11.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "candycane-1",
+    "name": "Candy Cane",
+    "price_stars": 390,
+    "price_usd": 5.0,
+    "image": "assets/gifts/candycane-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_11.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "easteregg-1",
+    "name": "Easter Egg",
+    "price_stars": 432,
+    "price_usd": 5.0,
+    "image": "assets/gifts/easteregg-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_11.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "xmasstocking-1",
+    "name": "Xmas Stocking",
+    "price_stars": 429,
+    "price_usd": 5.0,
+    "image": "assets/gifts/xmasstocking-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_11.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "lolpop-1",
+    "name": "Lol Pop",
+    "price_stars": 430,
+    "price_usd": 5.0,
+    "image": "assets/gifts/lolpop-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_11.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "miragelamp-1",
+    "name": "Mirage Lamp",
+    "price_stars": 448,
+    "price_usd": 5.0,
+    "image": null,
+    "rarity": "Обычный",
+    "source_archive": "gifts_11.zip",
+    "image_status": "missing"
+  },
+  {
+    "id": "bigyear-1",
+    "name": "Big Year",
+    "price_stars": 400,
+    "price_usd": 5.0,
+    "image": "assets/gifts/bigyear-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_11.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "instantramen-1",
+    "name": "Instant Ramen",
+    "price_stars": 400,
+    "price_usd": 5.0,
+    "image": "assets/gifts/instantramen-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_11.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "poolfloat-1",
+    "name": "Pool Float",
+    "price_stars": 438,
+    "price_usd": 5.0,
+    "image": "assets/gifts/poolfloat-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_11.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "vicecream-1",
+    "name": "Vice Cream",
+    "price_stars": 420,
+    "price_usd": 5.0,
+    "image": "assets/gifts/vicecream-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_11.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "whipcupcake-1",
+    "name": "Whip Cupcake",
+    "price_stars": 443,
+    "price_usd": 5.0,
+    "image": "assets/gifts/whipcupcake-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_11.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "chillflame-1",
+    "name": "Chill Flame",
+    "price_stars": 453,
+    "price_usd": 5.0,
+    "image": "assets/gifts/chillflame-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_11.zip",
+    "image_status": "available"
+  },
+  {
+    "id": "lunarsnake-1",
+    "name": "Lunar Snake",
+    "price_stars": 400,
+    "price_usd": 5.0,
+    "image": "assets/gifts/lunarsnake-1/model.png",
+    "rarity": "Обычный",
+    "source_archive": "gifts_11.zip",
+    "image_status": "available"
+  }
+]
