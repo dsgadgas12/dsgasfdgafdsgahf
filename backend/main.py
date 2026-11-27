@@ -1,4 +1,4 @@
-import os, json, hmac, hashlib, secrets, sqlite3, time, math, shutil
+import os, json, hmac, hashlib, secrets, sqlite3, time, math
 from pathlib import Path
 from urllib.parse import parse_qsl
 from datetime import datetime, timezone, timedelta
@@ -16,21 +16,7 @@ from dotenv import load_dotenv
 BASE = Path(__file__).resolve().parent
 PROJECT = BASE.parent
 load_dotenv(PROJECT / ".env")
-# Bot-Hosting persists /app/data across container rebuilds. Older deployments may
-# still have used a project-relative DATABASE_PATH; migrate that file once rather
-# than silently starting with an empty database after a redeploy.
-_raw_db_path = Path(os.getenv("DATABASE_PATH", "data/cloudegift.sqlite3")).expanduser()
-_persistent_dir = Path(os.getenv("DATA_DIR", "/app/data" if Path("/app/data").exists() else str(BASE / "data"))).expanduser()
-if _raw_db_path.is_absolute():
-    DB_PATH = _raw_db_path
-elif Path("/app/data").exists() or os.getenv("DATA_DIR"):
-    DB_PATH = _persistent_dir / _raw_db_path.name
-else:
-    DB_PATH = (PROJECT / _raw_db_path).resolve()
-_legacy_db_path = (PROJECT / _raw_db_path).resolve() if not _raw_db_path.is_absolute() else None
-if _legacy_db_path and _legacy_db_path != DB_PATH and _legacy_db_path.is_file() and not DB_PATH.exists():
-    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(_legacy_db_path, DB_PATH)
+DB_PATH = Path(os.getenv("DATABASE_PATH", str(BASE / "data" / "cloudegift.sqlite3")))
 BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 JWT_SECRET = os.getenv("JWT_SECRET", "CHANGE_ME_BEFORE_DEPLOYMENT")
 WEBAPP_URL = os.getenv("WEBAPP_URL", "https://example.com")
@@ -372,26 +358,7 @@ def public_config():
 
 @app.get("/health")
 def health():
-    # Keep this endpoint useful for deployment diagnostics without exposing paths,
-    # credentials, or user data.
-    try:
-        with connect() as con:
-            cases_count = int(con.execute("SELECT COUNT(*) FROM cases").fetchone()[0])
-            active_cases = int(con.execute("SELECT COUNT(*) FROM cases WHERE is_active=1").fetchone()[0])
-            case_items = int(con.execute("SELECT COUNT(*) FROM case_items").fetchone()[0])
-            gifts_count = int(con.execute("SELECT COUNT(*) FROM gifts").fetchone()[0])
-        db_ok = True
-    except Exception:
-        cases_count = active_cases = case_items = gifts_count = 0
-        db_ok = False
-    return {
-        "ok": db_ok,
-        "service": "CloudeGift API",
-        "database": {"ok": db_ok, "cases": cases_count, "active_cases": active_cases,
-                     "case_items": case_items, "gifts": gifts_count},
-        "frontend": {"ready": (PROJECT / "frontend" / "dist" / "index.html").is_file()},
-        "time": now(),
-    }
+    return {"ok":True,"service":"CloudeGift API","time":now()}
 
 @app.post("/api/auth/telegram")
 def auth(body: AuthBody):
@@ -492,10 +459,7 @@ def open_case(case_id: str, user=Depends(current_user)):
     with connect() as con:
         con.execute("BEGIN IMMEDIATE")
         case=con.execute("SELECT * FROM cases WHERE id=? AND is_active=1",(case_id,)).fetchone()
-        if not case:
-            available = [row[0] for row in con.execute("SELECT id FROM cases WHERE is_active=1 ORDER BY id").fetchall()]
-            raise HTTPException(404, {"message": "Кейс не найден или неактивен", "requested_id": case_id,
-                                     "available_case_ids": available})
+        if not case: raise HTTPException(404,"Кейс не найден")
         items=con.execute("SELECT gift_id,weight_bp FROM case_items WHERE case_id=?",(case_id,)).fetchall()
         if not items or sum(x["weight_bp"] for x in items)!=10000:
             raise HTTPException(500,"Вероятности кейса настроены неверно")
@@ -535,9 +499,7 @@ def open_case_batch(case_id: str, body: CaseOpenBatchBody, user=Depends(current_
         con.execute("BEGIN IMMEDIATE")
         case=con.execute("SELECT * FROM cases WHERE id=? AND is_active=1",(case_id,)).fetchone()
         if not case:
-            available = [row[0] for row in con.execute("SELECT id FROM cases WHERE is_active=1 ORDER BY id").fetchall()]
-            raise HTTPException(404, {"message": "Кейс не найден или неактивен", "requested_id": case_id,
-                                     "available_case_ids": available})
+            raise HTTPException(404,"Кейс не найден")
         items=con.execute("SELECT gift_id,weight_bp FROM case_items WHERE case_id=?",(case_id,)).fetchall()
         if not items or sum(x["weight_bp"] for x in items)!=10000:
             raise HTTPException(500,"Вероятности кейса настроены неверно")

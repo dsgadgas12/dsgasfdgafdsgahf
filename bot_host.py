@@ -31,7 +31,7 @@ def validate_environment() -> int:
     if not index_file.is_file():
         raise RuntimeError("Не найден frontend/dist/index.html. Сначала соберите Mini App: cd frontend && npm ci && npm run build")
     try:
-        port = int(os.getenv("SERVER_PORT", "3000"))
+        port = int(os.getenv("SERVER_PORT", "8000"))
     except ValueError as exc:
         raise RuntimeError("SERVER_PORT должен быть числом") from exc
     if not 1 <= port <= 65535:
