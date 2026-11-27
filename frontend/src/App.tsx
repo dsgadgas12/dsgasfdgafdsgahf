@@ -228,7 +228,7 @@ function Modal({children,onClose,title="CloudeGift"}:{children:React.ReactNode;o
 }
 
 export default function App() {
-  const [introVisible,setIntroVisible]=useState(()=>{try{return !sessionStorage.getItem("cg_intro_seen");}catch{return true;}});
+  const [introVisible,setIntroVisible]=useState(true);
   const [page,setPage]=useState<Page>("games");
   const [pageHistory,setPageHistory]=useState<Page[]>([]);
   const [activeCase,setActiveCase]=useState<CaseItem|null>(null);
@@ -666,16 +666,18 @@ export default function App() {
     ).sort((a,b)=>sort==="asc"?a.price_stars-b.price_stars:b.price_stars-a.price_stars);
   },[search,sort,rarityFilter,shopCategory]);
 
-  if(authStatus!=="ready"){
+  if(authStatus!=="ready" || introVisible){
+    if(authStatus==="checking" || introVisible){
+      return <div className="auth-loading-banner" role="status" aria-label="Подключаем CloudeGift">
+        <video src="/assets/cloudegift-intro.mp4" autoPlay muted loop playsInline preload="auto"
+          onEnded={()=>setIntroVisible(false)} onError={()=>setIntroVisible(false)} />
+      </div>;
+    }
     return <div className="app-shell auth-gate">
-      <header className="topbar auth-topbar">
-        <img className="brand-logo" src="/assets/cloudegift-logo.png" alt="CloudeGift" />
-      </header>
       <main className="auth-gate-content">
         <div className="auth-gate-card">
-          <Shield size={34}/>
-          <h1>{authStatus==="checking"?"Подключаем CloudeGift":authStatus==="telegram_required"?"Откройте CloudeGift в Telegram":"Не удалось войти"}</h1>
-          <p>{authStatus==="checking"?"Проверяем защищённую сессию Telegram.":authStatus==="telegram_required"?"Баланс, инвентарь и игровые действия доступны только после проверки Telegram-профиля. Откройте приложение через кнопку бота.":authError||"Проверьте настройки бота и попробуйте открыть приложение ещё раз."}</p>
+          <h1>{authStatus==="telegram_required"?"Откройте CloudeGift в Telegram":"Не удалось войти"}</h1>
+          <p>{authStatus==="telegram_required"?"Баланс, инвентарь и игровые действия доступны только после проверки Telegram-профиля. Откройте приложение через кнопку бота.":authError||"Проверьте настройки бота и попробуйте открыть приложение ещё раз."}</p>
           {authStatus==="error"&&<button type="button" className="btn btn-primary" onClick={()=>window.location.reload()}>Повторить вход</button>}
         </div>
       </main>
@@ -805,7 +807,7 @@ export default function App() {
           <div className="free-case-task-list">
             <button type="button" className="free-case-task-row" onClick={shareFreeCaseWithFriends} disabled={shareSending||sharePreparing||!!freeCaseInfo?.share_complete}>
               <span className="free-case-task-icon share"><Mail size={21} fill="currentColor" strokeWidth={1.7}/></span>
-              <span className="free-case-task-copy"><b>Отправьте 3 друзьям</b><small>Поделитесь сообщением в 3 своих чатах</small></span>
+              <span className="free-case-task-copy"><b>Отправьте 3 друзьям</b><small>Отправьте сообщение отдельно в 3 разных чата · {Math.min(3,Number(freeCaseInfo?.shares_sent)||0)}/3</small></span>
               {freeCaseTaskCheck && <span className={`free-case-task-status ${freeCaseTaskCheck.share?"ok":"bad"}`}>{freeCaseTaskCheck.share?<Check size={13}/>:<X size={13}/>}</span>}
               {!freeCaseTaskCheck && <ChevronRight className="free-case-task-arrow" size={19}/>}
             </button>
@@ -886,28 +888,7 @@ export default function App() {
     </AnimatePresence>
     {toast && <div className="toast" role="status" aria-live="polite">{toast}</div>}
   </div>
-  <AnimatePresence>{introVisible&&<IntroSplash onDone={()=>setIntroVisible(false)}/>}</AnimatePresence>
   </MotionConfig>;
-}
-
-function IntroSplash({onDone}:{onDone:()=>void}) {
-  const videoRef=useRef<HTMLVideoElement>(null);
-  useEffect(()=>{
-    try{sessionStorage.setItem("cg_intro_seen","1");}catch{}
-    if(window.matchMedia("(prefers-reduced-motion: reduce)").matches){onDone();return;}
-    const fallback=window.setTimeout(onDone,5000);
-    const video=videoRef.current;
-    if(video){
-      const play=video.play();
-      if(play&&typeof play.catch==="function")play.catch(()=>onDone());
-    }
-    return()=>window.clearTimeout(fallback);
-  },[]);
-  return <motion.div className="intro-splash" initial={{opacity:1}} exit={{opacity:0}} transition={{duration:.38}}>
-    <video ref={videoRef} src="/assets/cloudegift-intro.mp4" autoPlay muted playsInline preload="auto"
-      onEnded={onDone} onError={onDone} onClick={onDone}/>
-    <button className="intro-skip" onClick={onDone}>Пропустить <ArrowRight size={16}/></button>
-  </motion.div>;
 }
 
 function LiveFeed({items}:{items:any[]}) {
