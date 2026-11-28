@@ -19,6 +19,7 @@ DB_PATH = Path(os.getenv("DATABASE_PATH", str(BASE / "data" / "cloudegift.sqlite
 BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 JWT_SECRET = os.getenv("JWT_SECRET", "CHANGE_ME_BEFORE_DEPLOYMENT")
 WEBAPP_URL = os.getenv("WEBAPP_URL", "https://example.com")
+WEBAPP_DIR = Path(os.getenv("WEBAPP_DIR", str(PROJECT / "frontend" / "dist")))
 BOT_USERNAME = os.getenv("BOT_USERNAME", "").strip().lstrip("@")
 FREE_CASE_CHANNEL = os.getenv("FREE_CASE_CHANNEL", "").strip()
 FREE_CASE_CHANNEL_URL = os.getenv("FREE_CASE_CHANNEL_URL", "").strip()
