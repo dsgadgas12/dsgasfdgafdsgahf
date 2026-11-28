@@ -1,9 +1,8 @@
-# 0.6.22 — ротация демонстрационных призов LIVE
+# CloudeGift 0.6.22 — LIVE restored to uploaded 0.6.18 behavior
 
-- Вместо фиксированных изображений — отдельная видимая строка «ДЕМО / Примеры призов», независимо от наличия реальных выигрышей.
-- Случайный NFT из каталога с изображением и случайная сумма 200–1500 Stars с шагом 10; смена каждые 4 секунды, без повторения подряд при наличии альтернатив.
-- Примеры генерируются только в клиенте; не передаются в API, не создают транзакций и не влияют на баланс, вероятности и реальные выигрыши.
-- Реальная лента LIVE и механизм публикации после анимации из 0.6.21 сохранены.
-- Обновлены исходники и включённый webapp; изменены имена JS/CSS для обновления кэша.
-
-Проверка: Node syntax check, 1000 генераций с проверкой диапазона и отсутствия повторов, наличие изображений каталога, таймер и его очистка, раздельные строки. Полная сборка Vite и проверка в Telegram не проводились.
+- Replaced the artificial two-row LIVE/DEMO widget with the exact single-row LiveFeed component
+  from the user's uploaded `CloudeGift_0.6.18_upgrade_odds_restored.zip`.
+- Preserved PAWW's authenticated `/api/live` polling every 5 seconds.
+- Preserved withdrawal requests, user withdrawal history, and admin withdrawal management from PAWW.
+- The frontend does not generate fake LIVE events for production users; real items come from `/api/live`.
+- The source still requires a fresh frontend build before deployment.

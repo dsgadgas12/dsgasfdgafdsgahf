@@ -910,46 +910,22 @@ function IntroSplash({onDone,loop}:{onDone:()=>void;loop:boolean}) {
 }
 
 function LiveFeed({items}:{items:any[]}) {
-  const {gifts}=React.useContext(CatalogContext);
   const prizes=items.filter((item:any)=>Number(item.star_reward)>0 || !!item.gift_image);
-  // Separate visual demo stream. It does not create wins, balance changes or API requests.
-  const makeDemoDrop=()=>{
-    const roll=Math.random();
-    if(roll<0.24){
-      const amounts=[10,25,50,80,100,250,500,1000,2500];
-      return {id:`demo-stars-${Date.now()}-${Math.random()}`,star_reward:amounts[Math.floor(Math.random()*amounts.length)]};
-    }
-    const pool=gifts.filter((gift)=>!!gift.image);
-    const gift=pool[Math.floor(Math.random()*pool.length)]||gifts[0];
-    return {id:`demo-gift-${Date.now()}-${Math.random()}`,gift_image:gift?.image||null};
-  };
-  const [demoPrizes,setDemoPrizes]=useState<any[]>(()=>Array.from({length:8},makeDemoDrop));
-  useEffect(()=>{
-    const timer=window.setInterval(()=>setDemoPrizes(old=>[makeDemoDrop(),...old].slice(0,12)),2600);
-    return()=>window.clearInterval(timer);
-  },[]);
-  const renderPrizes=(list:any[],prefix:string)=><div className="live-feed-content">
-    {list.slice(0,12).map((item:any)=>item.star_reward
-      ? <motion.div className="live-prize live-prize-stars" key={`${prefix}-${item.id}`}
-          initial={{opacity:0,x:12,scale:.9}} animate={{opacity:1,x:0,scale:1}}
-          transition={{duration:.22,ease:"easeOut"}}>
-          <CurrencyIcon/><b>{fmt(item.star_reward)}</b>
-        </motion.div>
-      : <motion.div className="live-prize live-prize-gift" key={`${prefix}-${item.id}`}
-          initial={{opacity:0,x:12,scale:.88}} animate={{opacity:1,x:0,scale:1}}
-          transition={{duration:.22,ease:"easeOut"}}>
-          <img src={`/${String(item.gift_image)}`} alt="" loading="lazy"/>
-        </motion.div>
-    )}
-  </div>;
-  return <div className="live-feed-stack" aria-label="Лента выигрышей и демонстрация призов">
-    <div className="live-feed live-feed-prizes" aria-label="LIVE — реальные выигрыши">
-      <div className="live-feed-label"><span className="live-dot"/>LIVE</div>
-      {renderPrizes(prizes,"live")}
-    </div>
-    <div className="live-feed live-feed-prizes live-feed-demo-row" aria-label="ДЕМО — демонстрационные призы">
-      <div className="live-feed-label">ДЕМО</div>
-      {renderPrizes(demoPrizes,"demo")}
+  return <div className="live-feed live-feed-prizes" aria-label="LIVE — последние выигрыши">
+    <div className="live-feed-label"><span className="live-dot"/>LIVE</div>
+    <div className="live-feed-content">
+      {prizes.slice(0,12).map((item:any)=>item.star_reward
+        ? <motion.div className="live-prize live-prize-stars" key={item.id}
+            initial={{opacity:0,x:12,scale:.9}} animate={{opacity:1,x:0,scale:1}}
+            transition={{duration:.22,ease:"easeOut"}}>
+            <CurrencyIcon/><b>{fmt(item.star_reward)}</b>
+          </motion.div>
+        : <motion.div className="live-prize live-prize-gift" key={item.id}
+            initial={{opacity:0,x:12,scale:.88}} animate={{opacity:1,x:0,scale:1}}
+            transition={{duration:.22,ease:"easeOut"}}>
+            <img src={`/${String(item.gift_image)}`} alt="" loading="lazy"/>
+          </motion.div>
+      )}
     </div>
   </div>;
 }
