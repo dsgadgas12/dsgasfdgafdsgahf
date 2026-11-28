@@ -17,13 +17,12 @@
 - `bot_host.py` запускает FastAPI и Telegram polling в одном процессе.
 - Корневой `requirements.txt` содержит Python-зависимости.
 - Приложение слушает `0.0.0.0` на порту `SERVER_PORT`, который передаёт Bot-Hosting.
-- Mini App раздаётся FastAPI из `frontend/dist` с того же HTTPS-origin, что и `/api`.
-- Нужно сначала выполнить `cd frontend && npm ci && npm run build`, затем включить `frontend/dist` в загружаемый ZIP.
+- Mini App раздаётся FastAPI из `webapp/` с того же HTTPS-origin, что и `/api`.
+- Нужно сначала выполнить `cd frontend && npm ci && npm run build`, затем запустить `package_for_bothost.py`. Готовый ZIP уже содержит `webapp/`.
 - Нужно заполнить секретные переменные в панели и настроить persistent storage для `backend/data`.
 
 ## Непроверенные внешние шаги
 
-- Полная frontend-сборка в текущем окружении не завершилась: `npm ci` превысил лимит времени, поэтому `frontend/dist` не приложен.
 - Реальное развёртывание в Bot-Hosting требует доступа к аккаунту, создания deployment и его HTTPS URL.
 - Автоматическая проверка входящих Tonkeeper/TON-переводов и зачисление GRAM на баланс пока не реализованы; требуется ручная проверка.
 - Автоматический вывод NFT/Stars, PostgreSQL/Redis и нагрузочное тестирование пока не реализованы.

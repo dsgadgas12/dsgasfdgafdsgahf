@@ -27,9 +27,9 @@ def validate_environment() -> int:
     webapp_url = os.environ["WEBAPP_URL"].strip()
     if not webapp_url.startswith("https://"):
         raise RuntimeError("WEBAPP_URL должен быть публичным HTTPS-адресом Bot-Hosting")
-    index_file = ROOT / "frontend" / "dist" / "index.html"
-    if not index_file.is_file():
-        raise RuntimeError("Не найден frontend/dist/index.html. Сначала соберите Mini App: cd frontend && npm ci && npm run build")
+    from backend.main import WEBAPP_DIR
+    if not (WEBAPP_DIR / "index.html").is_file():
+        raise RuntimeError(f"Сборка Mini App отсутствует. Распакуйте ZIP целиком: рядом с {ROOT / 'bot_host.py'} должна быть папка webapp с index.html и assets.")
     try:
         port = int(os.getenv("SERVER_PORT", "8000"))
     except ValueError as exc:

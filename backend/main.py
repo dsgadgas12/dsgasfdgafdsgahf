@@ -1274,6 +1274,10 @@ def add_stars_from_payment(tg_id:int, amount:int, charge_id:str, payload:str):
 
 
 # Production Mini App static files. API routes are registered above this mount.
-FRONTEND_DIST = PROJECT / "frontend" / "dist"
-if FRONTEND_DIST.is_dir():
-    app.mount("/", StaticFiles(directory=str(FRONTEND_DIST), html=True), name="frontend")
+WEBAPP_DIR = PROJECT / "webapp"
+if not (WEBAPP_DIR / "index.html").is_file():
+    legacy_dir = PROJECT / "frontend" / "dist"
+    if (legacy_dir / "index.html").is_file():
+        WEBAPP_DIR = legacy_dir
+if (WEBAPP_DIR / "index.html").is_file():
+    app.mount("/", StaticFiles(directory=WEBAPP_DIR, html=True), name="frontend")

@@ -1,10 +1,10 @@
-"""Create a Bot-Hosting upload ZIP after frontend/dist has been built."""
+"""Create a Bot-Hosting upload ZIP after webapp has been built."""
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
 
 ROOT = Path(__file__).resolve().parent
 OUTPUT = ROOT.parent / f"{ROOT.name}_BotHosting.zip"
-REQUIRED_FRONTEND = ROOT / "frontend" / "dist" / "index.html"
+REQUIRED_FRONTEND = ROOT / "webapp" / "index.html"
 
 if not REQUIRED_FRONTEND.is_file():
     raise SystemExit("Сначала соберите frontend: build-for-bothost.ps1 или ./build-for-bothost.sh")
@@ -23,7 +23,7 @@ with ZipFile(OUTPUT, "w", compression=ZIP_DEFLATED, compresslevel=6) as archive:
             continue
         relative = path.relative_to(ROOT)
         parts = set(relative.parts)
-        if parts & EXCLUDED_DIRS:
+        if relative.parts[:2] == ("frontend", "dist") or parts & EXCLUDED_DIRS:
             continue
         if path.name in EXCLUDED_FILES:
             continue
@@ -35,4 +35,4 @@ with ZipFile(OUTPUT, "w", compression=ZIP_DEFLATED, compresslevel=6) as archive:
         files_added += 1
 
 print(f"Создан архив: {OUTPUT}")
-print(f"Файлов: {files_added}; frontend/dist включён.")
+print(f"Файлов: {files_added}; webapp включён.")

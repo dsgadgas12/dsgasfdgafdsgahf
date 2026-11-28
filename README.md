@@ -13,7 +13,7 @@ Telegram Mini App с кейсами, каталогом Telegram Gifts, мага
 ## Bot-Hosting.net
 
 1. Установи Node.js 20+ на компьютере.
-2. Собери frontend: запусти `build-for-bothost.ps1` в Windows или `./build-for-bothost.sh` в macOS/Linux. Скрипт автоматически создаст upload ZIP рядом с папкой проекта, добавив `frontend/dist`.
+2. Собери frontend: запусти `build-for-bothost.ps1` в Windows или `./build-for-bothost.sh` в macOS/Linux. Скрипт автоматически создаст upload ZIP рядом с папкой проекта, добавив `webapp`.
 3. Загрузи созданный `CloudeGift_BotHosting.zip`; в нём файлы проекта находятся прямо в корне, без `.env`, `node_modules`, `.venv` и локальной базы.
 4. Создай в Bot-Hosting deployment типа **Application**, runtime **Python** (рекомендуется 3.12), загрузи ZIP и распакуй его в корень deployment.
 5. В Startup укажи `bot_host.py` как Entry File.
