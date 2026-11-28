@@ -453,3 +453,52 @@ button:not(:disabled):active { filter:brightness(1.13); }
 .leader-empty-state span{font-size:12px;line-height:1.5;max-width:300px}
 .info-note{font-size:10px;line-height:1.5;color:#8d919b;background:#17191f;border:1px solid #ffffff0b;border-radius:12px;padding:10px 12px}
 @media(max-width:380px){.topbar{height:82px;padding-left:12px;padding-right:12px}.brand-logo{width:180px;max-width:210px;max-height:66px}}
+
+/* 0.6.21 — restrained game surfaces and withdrawal lifecycle. */
+.slots-page{gap:15px}
+.slots-machine{padding:15px 12px 12px;background:#202328;border:1px solid #383c43;border-radius:18px;box-shadow:none}
+.slots-machine:before{display:none}
+.slots-machine-top,.slots-machine-footer{font-weight:600;letter-spacing:.25px;text-transform:none;color:#a4aab3}
+.slots-machine-top>span:first-child{font-size:13px;color:#f2f3f5;letter-spacing:0}
+.slots-machine-footer{font-size:10px}
+.slots-reels{background:#101216;border:1px solid #30343a;border-radius:12px;gap:6px;padding:6px;box-shadow:none}
+.slots-reel{height:220px;border:0;border-radius:7px;background:#191c21;box-shadow:none;position:relative}
+.slots-reel:after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(#10121670,transparent 31%,transparent 69%,#10121670)}
+.slots-reel-track{gap:8px}
+.slots-symbol{height:68px;min-height:68px;border-radius:7px;background:#252930;border:1px solid #ffffff0a;box-shadow:none}
+.slots-symbol>.gift-image{width:60px;height:60px;filter:none}
+.slots-win-line{height:76px;border:1px solid #d9b76c;border-radius:8px;left:5px;right:5px;box-shadow:none;background:#e7c77c06;padding:0;gap:6px}
+.slots-win-line span{border:0}
+.slots-live-mark{border:1px solid #3c424a;background:#252930;color:#d8dce2;font-size:11px;font-weight:600;letter-spacing:0}
+.slots-controls{background:#202328;border-color:#343941;border-radius:16px;padding:14px;gap:13px}
+.slots-bet-label{font-size:10px;font-weight:600;letter-spacing:.3px}
+.slots-bet-stepper>button{background:#2a2e35;border-color:#3b4049}
+.slots-spin-button{background:#e9c777;color:#211b10;box-shadow:none;border-radius:11px;letter-spacing:.2px;font-weight:700}
+.slots-spin-button:disabled{opacity:.42}
+.slots-result.is-win{background:#242a25;border-color:#536d58}
+.slots-result.is-win .slots-result-kicker{color:#acd5af}
+.slots-note{font-size:11px;color:#a6adb7}
+.live-feed-prizes{height:54px;gap:9px;overflow:hidden}
+.live-feed-prizes .live-feed-content{flex:1;min-width:0;overflow:hidden;display:flex;align-items:center}
+.live-empty{font-size:10px;color:#9199a3;white-space:nowrap}
+.live-examples{display:flex;align-items:center;gap:4px;flex-shrink:0;border-left:1px solid #ffffff15;padding-left:8px}
+.live-examples small{font-size:9px;color:#a5abb5}
+.live-examples img{width:23px;height:27px;object-fit:contain}
+.case-preview-pending{opacity:.8;animation:case-preview-wait .8s ease-in-out infinite alternate}
+@keyframes case-preview-wait{to{opacity:.5}}
+.withdraw-progress-card{padding:13px 11px;margin:9px 0;background:#202429;border:1px solid #363b42;border-radius:12px;display:flex;flex-direction:column;gap:10px}
+.withdraw-progress-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.withdraw-progress-head>div{display:flex;flex-direction:column;gap:4px;min-width:0}
+.withdraw-progress-head b{font-size:14px;color:#f3f4f6;font-weight:650}
+.withdraw-progress-head small,.withdraw-progress-detail{font-size:10px;color:#a4abb5;line-height:1.4}
+.withdraw-stage{font-size:11px;line-height:1.35;color:#dfc78f;text-align:right;max-width:54%;font-weight:600}
+.withdraw-stage.stage-2,.withdraw-stage.stage-4{color:#a4d6b3}
+.withdraw-stage.stage-0{color:#e4a5a5}
+.withdraw-progress-bars{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+.withdraw-progress-bars>span{height:4px;background:#3c424b;overflow:hidden;border-radius:3px;position:relative}
+.withdraw-progress-bars>span>i{display:block;width:0;height:100%;background:#e4c27b;border-radius:3px}
+.withdraw-progress-bars>span.done>i{width:100%;background:#99c9ab}
+.withdraw-progress-bars>span.active>i{animation:withdraw-sweep 2.1s ease-in-out infinite}
+@keyframes withdraw-sweep{0%{width:0;opacity:1}85%{width:100%;opacity:1}100%{width:100%;opacity:0}}
+@media(prefers-reduced-motion:reduce){.withdraw-progress-bars>span.active>i{animation:none;width:65%}.case-preview-pending{animation:none}}
+@media(max-width:360px){.live-examples img:last-child{display:none}.slots-symbol>.gift-image{width:54px;height:54px}}
