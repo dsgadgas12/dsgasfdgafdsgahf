@@ -525,3 +525,17 @@ button:not(:disabled):active { filter:brightness(1.13); }
 @keyframes profile-payout-loop{0%{transform:scaleX(0);opacity:1}82%{transform:scaleX(1);opacity:1}100%{transform:scaleX(1);opacity:0}}
 @keyframes profile-payout-finish{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 @media(prefers-reduced-motion:reduce){.profile-withdrawals .withdraw-progress-bars>span.active>i{animation:none;transform:scaleX(.65)}.profile-withdrawals .withdraw-progress-bars>span.finish>i{animation:none}}
+
+/* 0.6.24 — independent, compact real and demo rails; no legacy live-feed CSS. */
+.live-feed-v24{display:flex;flex-direction:column;min-width:0;overflow:hidden;padding:2px 0 5px;border-bottom:1px solid var(--line)}
+.live-v24-row{display:flex;align-items:center;gap:8px;min-width:0;min-height:36px}
+.live-v24-label{display:flex;align-items:center;gap:5px;flex:0 0 43px;font-size:10px;font-weight:600;letter-spacing:.3px;color:#a8afb6;white-space:nowrap}
+.live-v24-demo{border-top:1px solid #ffffff0d}.live-v24-demo .live-v24-label{color:#c9bca4}
+.live-v24-track{display:flex;align-items:center;gap:5px;min-width:0;flex:1;overflow:hidden}
+.live-v24-gift{height:32px;width:32px;flex:0 0 32px;object-fit:contain;display:block}
+.live-v24-stars{display:flex;align-items:center;gap:4px;padding:3px 6px;white-space:nowrap;color:#f5d27d;font-size:12px;font-variant-numeric:tabular-nums;flex:0 0 auto}
+.live-v24-stars .currency-icon{width:15px;height:15px;flex:0 0 15px}.live-v24-zero{color:#a0a7af;font-size:11px}
+.live-v24-animate{animation:live-v24-enter .28s ease-out both}
+@keyframes live-v24-enter{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:translateX(0)}}
+@media(prefers-reduced-motion:reduce){.live-v24-animate{animation:none}}
+@media(max-width:320px){.live-v24-gift{height:26px;width:26px;flex-basis:26px}.live-v24-track{gap:3px}.live-v24-row{gap:4px}}

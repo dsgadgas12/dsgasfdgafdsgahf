@@ -1321,4 +1321,11 @@ if not (WEBAPP_DIR / "index.html").is_file():
     if (legacy_dir / "index.html").is_file():
         WEBAPP_DIR = legacy_dir
 if (WEBAPP_DIR / "index.html").is_file():
-    app.mount("/", StaticFiles(directory=WEBAPP_DIR, html=True), name="frontend")
+    class MiniAppStaticFiles(StaticFiles):
+        async def get_response(self, path, scope):
+            response = await super().get_response(path, scope)
+            if path in ("", ".", "/", "index.html") or response.headers.get("content-type", "").startswith("text/html"):
+                response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            return response
+
+    app.mount("/", MiniAppStaticFiles(directory=WEBAPP_DIR, html=True), name="frontend")

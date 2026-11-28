@@ -943,53 +943,50 @@ function WithdrawalProgress({request:w}:{request:WithdrawalRequest}) {
   </article>;
 }
 
-// Demonstration prizes are presentation-only; never submitted to the live API.
-function nextLiveExample(pool:GiftItem[],previous?:{gift?:GiftItem;stars:number;tick:number}) {
-  const choices=pool.filter(g=>g.id!==previous?.gift?.id);
-  const available=choices.length?choices:pool;
-  const gift=available.length?available[Math.floor(Math.random()*available.length)]:undefined;
-  // Uniform draw from 200 to 1500, in steps of 10; avoid consecutive repeats.
-  let step=Math.floor(Math.random()*131);
-  if(200+step*10===previous?.stars)step=(step+1)%131;
-  return {gift,stars:200+step*10,tick:(previous?.tick??0)+1};
+// Cosmetic prize showcase only. It is never a source of LIVE wins or transactions.
+const liveFallbackPool:GiftItem[] = [{"id":"durovscap-1","name":"Durov's Cap","price_stars":30339,"image":"assets/gifts/durovscap-1/model.png","rarity":"Мифический","image_status":"available"},{"id":"mightyarm-1","name":"Mighty Arm","price_stars":9289,"image":"assets/gifts/mightyarm-1/model.png","rarity":"Эпический","image_status":"available"},{"id":"kissedfrog-1","name":"Kissed Frog","price_stars":4149,"image":"assets/gifts/kissedfrog-1/model.png","rarity":"Редкий","image_status":"available"},{"id":"genielamp-1","name":"Genie Lamp","price_stars":2724,"image":"assets/gifts/genielamp-1/model.png","rarity":"Редкий","image_status":"available"},{"id":"trappedheart-1","name":"Trapped Heart","price_stars":1399,"image":"assets/gifts/trappedheart-1/model.png","rarity":"Необычный","image_status":"available"},{"id":"flyingbroom-1","name":"Flying Broom","price_stars":929,"image":"assets/gifts/flyingbroom-1/model.png","rarity":"Необычный","image_status":"available"},{"id":"berrybox-1","name":"Berry Box","price_stars":681,"image":"assets/gifts/berrybox-1/model.png","rarity":"Необычный","image_status":"available"},{"id":"snowglobe-1","name":"Snow Globe","price_stars":551,"image":"assets/gifts/snowglobe-1/model.png","rarity":"Необычный","image_status":"available"},{"id":"libertyfigure-1","name":"Liberty Figure","price_stars":465,"image":"assets/gifts/libertyfigure-1/model.png","rarity":"Обычный","image_status":"available"},{"id":"cloverpin-1","name":"Clover Pin","price_stars":443,"image":"assets/gifts/cloverpin-1/model.png","rarity":"Обычный","image_status":"available"},{"id":"spicedwine-1","name":"Spiced Wine","price_stars":448,"image":"assets/gifts/spicedwine-1/model.png","rarity":"Обычный","image_status":"available"},{"id":"jesterhat-1","name":"Jester Hat","price_stars":438,"image":"assets/gifts/jesterhat-1/model.png","rarity":"Обычный","image_status":"available"}];
+type LiveExample={gifts:GiftItem[];stars:number;tick:number};
+function nextLiveExample(pool:GiftItem[],previous?:LiveExample):LiveExample {
+  const source=pool.length?pool:liveFallbackPool;
+  const oldIds=new Set(previous?.gifts.map(g=>g.id)??[]);
+  const fresh=source.filter(g=>!oldIds.has(g.id));
+  const choices=[...(fresh.length>=3?fresh:source)];
+  const gifts:GiftItem[]=[];
+  while(choices.length&&gifts.length<3){
+    const i=Math.floor(Math.random()*choices.length);
+    gifts.push(choices.splice(i,1)[0]);
+  }
+  const count=19801;
+  let stars=200+Math.floor(Math.random()*count);
+  if(stars===previous?.stars)stars=200+(stars-200+1)%count;
+  return {gifts,stars,tick:(previous?.tick??0)+1};
 }
 function LiveFeed({items}:{items:any[]}) {
   const {gifts}=React.useContext(CatalogContext);
   const prizes=items.filter((item:any)=>Number(item.star_reward)>0 || !!item.gift_image);
   const pool=useMemo(()=>gifts.filter(g=>!!g.image&&g.image_status!=="star"&&!g.id.startsWith("stars-")),[gifts]);
   const [example,setExample]=useState(()=>nextLiveExample(pool));
-  const reduced=useReducedMotion();
   useEffect(()=>{
     setExample(previous=>nextLiveExample(pool,previous));
-    const timer=window.setInterval(()=>setExample(previous=>nextLiveExample(pool,previous)),4000);
+    const timer=window.setInterval(()=>setExample(previous=>nextLiveExample(pool,previous)),1000);
     return()=>window.clearInterval(timer);
   },[pool]);
-  return <div className="live-feed live-feed-prizes live-feed-rotating" aria-label="LIVE — последние выигрыши и демонстрация призов">
-    <div className="live-rail-row">
-      <div className="live-feed-label"><span className="live-dot"/>LIVE</div>
-      <div className="live-feed-content" aria-label="Реальные выигрыши">
-        {!prizes.length&&<span className="live-empty">Пока нет выигрышей</span>}
+  return <div className="live-feed-v24" aria-label="Реальные выигрыши и отдельная случайная демонстрация призов">
+    <div className="live-v24-row live-v24-real" aria-label="Реальные выигрыши">
+      <div className="live-v24-label"><span className="live-dot"/>LIVE</div>
+      <div className="live-v24-track">
+        {!prizes.length&&<span className="live-v24-zero" aria-label="Нет реальных выигрышей">0</span>}
         {prizes.slice(0,12).map((item:any)=>Number(item.star_reward)>0
-          ? <motion.div className="live-prize live-prize-stars" key={item.id}
-              initial={reduced?false:{opacity:0,x:12,scale:.9}} animate={{opacity:1,x:0,scale:1}}
-              transition={{duration:.22,ease:"easeOut"}}>
-              <CurrencyIcon/><b>{fmt(item.star_reward)}</b>
-            </motion.div>
-          : <motion.div className="live-prize live-prize-gift" key={item.id}
-              initial={reduced?false:{opacity:0,x:12,scale:.88}} animate={{opacity:1,x:0,scale:1}}
-              transition={{duration:.22,ease:"easeOut"}}>
-              <img src={`/${String(item.gift_image)}`} alt="NFT" loading="lazy"/>
-            </motion.div>)}
+          ? <div className="live-v24-stars" key={item.id}><CurrencyIcon/><b>{fmt(item.star_reward)}</b></div>
+          : <img className="live-v24-gift" key={item.id} src={`/${String(item.gift_image)}`} alt="NFT"/>)}
       </div>
     </div>
-    <div className="live-rail-row live-demo-row" aria-label="Демонстрационные призы, не реальные выигрыши">
-      <div className="live-feed-label live-demo-label">ДЕМО</div>
-      <motion.div className="live-demo-content" key={example.tick}
-        initial={reduced?false:{opacity:0,y:3}} animate={{opacity:1,y:0}} transition={{duration:.2}}>
-        {example.gift&&<div className="live-prize live-prize-gift" title={example.gift.name}><img src={imageSrc(example.gift)} alt={example.gift.name}/></div>}
-        <div className="live-prize live-prize-stars"><CurrencyIcon/><b>{fmt(example.stars)}</b></div>
-      </motion.div>
-      <small className="live-demo-caption">Примеры призов</small>
+    <div className="live-v24-row live-v24-demo" aria-label="Демонстрация случайных призов, не реальные выигрыши">
+      <div className="live-v24-label" title="Случайные демонстрационные призы, не реальные выигрыши">ДЕМО</div>
+      <div className="live-v24-track live-v24-animate" key={example.tick}>
+        {example.gifts.map(g=><img className="live-v24-gift" key={g.id} src={imageSrc(g)} alt={g.name} title={g.name}/>)}
+        <div className="live-v24-stars"><CurrencyIcon/><b>{fmt(example.stars)}</b></div>
+      </div>
     </div>
   </div>;
 }
