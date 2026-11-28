@@ -23,6 +23,8 @@ CREATE TABLE cases (
   price_stars INTEGER NOT NULL,
   category TEXT NOT NULL,
   theme TEXT NOT NULL,
+  banner TEXT,
+  description TEXT,
   is_active INTEGER NOT NULL DEFAULT 1
 );
 CREATE TABLE case_items (

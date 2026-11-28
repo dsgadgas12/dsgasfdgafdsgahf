@@ -3,11 +3,6 @@
 interface ImportMetaEnv {
   readonly DEV: boolean;
   readonly VITE_API_URL?: string;
-  readonly VITE_DEMO_BALANCE?: string;
-  readonly VITE_ADMIN_IDS?: string;
-  readonly VITE_DEMO_ADMIN?: string;
-  readonly VITE_GRAM_WALLET_ADDRESS?: string;
-  readonly VITE_GRAM_JETTON_MASTER_ADDRESS?: string;
 }
 interface ImportMeta {
   readonly env: ImportMetaEnv;

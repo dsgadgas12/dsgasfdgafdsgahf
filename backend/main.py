@@ -8,6 +8,7 @@ from typing import Optional
 import jwt
 import httpx
 from fastapi import FastAPI, HTTPException, Depends, Header
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
@@ -19,16 +20,15 @@ DB_PATH = Path(os.getenv("DATABASE_PATH", str(BASE / "data" / "cloudegift.sqlite
 BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 JWT_SECRET = os.getenv("JWT_SECRET", "CHANGE_ME_BEFORE_DEPLOYMENT")
 WEBAPP_URL = os.getenv("WEBAPP_URL", "https://example.com")
-WEBAPP_DIR = Path(os.getenv("WEBAPP_DIR", str(PROJECT / "frontend" / "dist")))
 BOT_USERNAME = os.getenv("BOT_USERNAME", "").strip().lstrip("@")
-FREE_CASE_CHANNEL = os.getenv("FREE_CASE_CHANNEL", "").strip()
-FREE_CASE_CHANNEL_URL = os.getenv("FREE_CASE_CHANNEL_URL", "").strip()
+GRAM_WALLET_ADDRESS = (os.getenv("GRAM_WALLET_ADDRESS") or "UQD2v-fRnsSr8Jov3dp4hRa7vxZbtJVqJaZKrw0EhpEgo0Os").strip()
+FREE_CASE_CHANNEL = (os.getenv("FREE_CASE_CHANNEL") or "@CloudeCaseNews").strip()
+FREE_CASE_CHANNEL_URL = (os.getenv("FREE_CASE_CHANNEL_URL") or "https://t.me/CloudeCaseNews").strip()
 FREE_CASE_COOLDOWN = timedelta(hours=24)
 FREE_CASE_STAR_PRIZES = (5, 10, 25, 50, 100, 250, 500, 700)
-DEV_MODE = os.getenv("DEV_MODE", "false").lower() == "true"
 ADMIN_IDS = {x.strip() for x in os.getenv("ADMIN_TG_IDS", "").split(",") if x.strip()}
-GIFTS_FILE = PROJECT / "frontend" / "src" / "data" / "gifts.json"
-CASES_FILE = PROJECT / "frontend" / "src" / "data" / "cases.json"
+GIFTS_FILE = BASE / "catalog" / "gifts.json"
+CASES_FILE = BASE / "catalog" / "cases.json"
 
 app = FastAPI(title="CloudeGift API", version="0.1.0")
 app.add_middleware(
@@ -58,7 +58,26 @@ def connect():
 def now():
     return datetime.now(timezone.utc).isoformat()
 
+def defer_live(con, transaction_id: int):
+    # Fallback for clients that disconnect before the reveal animation ends.
+    con.execute("INSERT INTO live_pending(transaction_id,visible_at) VALUES(?,?)",
+                (transaction_id,(datetime.now(timezone.utc)+timedelta(seconds=60)).isoformat()))
+    return transaction_id
+
+
+def read_catalog(path: Path):
+    try:
+        rows = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise RuntimeError(f"Не удалось загрузить каталог {path.name}") from exc
+    if not isinstance(rows, list) or not rows:
+        raise RuntimeError(f"Каталог {path.name} пуст или повреждён")
+    return rows
+
+
 def init_db():
+    gifts = read_catalog(GIFTS_FILE)
+    cases = read_catalog(CASES_FILE)
     with connect() as con:
         con.executescript("""
         CREATE TABLE IF NOT EXISTS users(
@@ -93,6 +112,10 @@ def init_db():
           id INTEGER PRIMARY KEY AUTOINCREMENT, tg_id INTEGER NOT NULL, type TEXT NOT NULL,
           amount INTEGER NOT NULL, currency TEXT NOT NULL DEFAULT 'XTR', status TEXT NOT NULL,
           reference TEXT, note TEXT, created_at TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS live_pending(
+          transaction_id INTEGER PRIMARY KEY REFERENCES transactions(id),
+          visible_at TEXT NOT NULL
         );
         CREATE TABLE IF NOT EXISTS payments(
           telegram_charge_id TEXT PRIMARY KEY, tg_id INTEGER NOT NULL, amount INTEGER NOT NULL,
@@ -155,16 +178,20 @@ def init_db():
         CREATE INDEX IF NOT EXISTS idx_inventory_user ON inventory(tg_id,status);
         CREATE INDEX IF NOT EXISTS idx_transactions_user ON transactions(tg_id,created_at);
         """)
+        con.execute("BEGIN IMMEDIATE")
         withdrawal_columns={row["name"] for row in con.execute("PRAGMA table_info(withdrawal_requests)").fetchall()}
         if "inventory_ids_json" not in withdrawal_columns:
             con.execute("ALTER TABLE withdrawal_requests ADD COLUMN inventory_ids_json TEXT NOT NULL DEFAULT '[]'")
-        if GIFTS_FILE.exists():
-            for g in json.loads(GIFTS_FILE.read_text(encoding="utf-8")):
-                con.execute("""INSERT INTO gifts(id,name,price_stars,image,rarity,image_status)
-                  VALUES(?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,
-                  price_stars=excluded.price_stars,image=excluded.image,rarity=excluded.rarity,
-                  image_status=excluded.image_status""",
-                  (g["id"],g["name"],g["price_stars"],g.get("image"),g.get("rarity"),g.get("image_status")))
+        case_columns = {row["name"] for row in con.execute("PRAGMA table_info(cases)")}
+        for column in ("banner", "description"):
+            if column not in case_columns:
+                con.execute(f"ALTER TABLE cases ADD COLUMN {column} TEXT")
+        for g in gifts:
+            con.execute("""INSERT INTO gifts(id,name,price_stars,image,rarity,image_status)
+              VALUES(?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,
+              price_stars=excluded.price_stars,image=excluded.image,rarity=excluded.rarity,
+              image_status=excluded.image_status""",
+              (g["id"],g["name"],g["price_stars"],g.get("image"),g.get("rarity"),g.get("image_status")))
         # Служебные призы-звёзды хранятся в gifts для связи case_items,
         # но не попадают в магазин и не добавляются в NFT-инвентарь.
         for amount in (10,25,50,80,100,250,300,500,1000,1500,2000,2500,3000,4000,5000,10000,20000):
@@ -172,29 +199,24 @@ def init_db():
               "INSERT OR IGNORE INTO gifts(id,name,price_stars,image,rarity,image_status) VALUES(?,?,?,?,?,?)",
               (f"stars-{amount}",f"{amount} Telegram Stars",amount,None,"Звёзды","star")
             )
-        if CASES_FILE.exists():
-            for c in json.loads(CASES_FILE.read_text(encoding="utf-8")):
-                con.execute("""INSERT INTO cases(id,name,price_stars,category,theme,is_active)
-                  VALUES(?,?,?,?,?,1) ON CONFLICT(id) DO UPDATE SET name=excluded.name,
-                  price_stars=excluded.price_stars,category=excluded.category,theme=excluded.theme,is_active=1""",
-                  (c["id"],c["name"],c["price_stars"],c["category"],c["theme"]))
-                con.execute("DELETE FROM case_items WHERE case_id=?",(c["id"],))
-                for item in c["items"]:
-                    con.execute("INSERT INTO case_items(case_id,gift_id,weight_bp) VALUES(?,?,?)",
-                                (c["id"],item["gift_id"],item["weight_bp"]))
-        con.execute("INSERT OR IGNORE INTO promos(code,reward_stars,max_uses) VALUES('CLOUDYSTART',250,1000)")
+        for c in cases:
+            con.execute("""INSERT INTO cases(id,name,price_stars,category,theme,banner,description,is_active)
+              VALUES(?,?,?,?,?,?,?,1) ON CONFLICT(id) DO UPDATE SET name=excluded.name,
+              price_stars=excluded.price_stars,category=excluded.category,theme=excluded.theme,
+              banner=excluded.banner,description=excluded.description,is_active=1""",
+              (c["id"],c["name"],c["price_stars"],c["category"],c["theme"],c.get("banner"),c.get("description")))
+            con.execute("DELETE FROM case_items WHERE case_id=?",(c["id"],))
+            for item in c["items"]:
+                con.execute("INSERT INTO case_items(case_id,gift_id,weight_bp) VALUES(?,?,?)",
+                            (c["id"],item["gift_id"],item["weight_bp"]))
+        con.execute("DELETE FROM promos WHERE code='CLOUDYSTART'")
 
 @app.on_event("startup")
 def startup():
     init_db()
 
-def verify_init_data(init_data: str, start_param: str = ""):
+def verify_init_data(init_data: str):
     if not BOT_TOKEN:
-        if DEV_MODE:
-            dev_id=os.getenv("DEV_TG_ID","100000001")
-            if start_param.startswith("dev_") and start_param[4:].isdigit():
-                dev_id=start_param[4:]
-            return {"id": int(dev_id), "first_name":"Demo", "username":f"demo_{dev_id}"}
         raise HTTPException(503,"BOT_TOKEN не настроен")
     try:
         pairs = dict(parse_qsl(init_data, keep_blank_values=True))
@@ -248,11 +270,11 @@ def telegram_api(method: str, payload: dict):
         response = httpx.post(
             f"https://api.telegram.org/bot{BOT_TOKEN}/{method}",
             json=payload,
-            timeout=12.0,
+            timeout=httpx.Timeout(8.0,connect=3.0),
         )
         data = response.json()
     except Exception as exc:
-        raise HTTPException(502, f"Не удалось связаться с Telegram: {exc}")
+        raise HTTPException(502, "Не удалось связаться с Telegram") from exc
     if not response.is_success or not data.get("ok"):
         description = str(data.get("description", "Ошибка Telegram Bot API"))
         raise HTTPException(502, description)
@@ -352,8 +374,17 @@ class WithdrawalStatusBody(BaseModel):
     status: str
     admin_note: str = Field(default="", max_length=300)
 
+class LiveRevealBody(BaseModel):
+    ids: list[int] = Field(min_length=1, max_length=5)
+
 class FreeCaseShareConfirmBody(BaseModel):
     share_token: str = Field(min_length=16, max_length=128)
+
+@app.get("/api/public-config")
+def public_config():
+    """Expose only public client settings; never return secrets or bot credentials."""
+    return {"gram_wallet_address": GRAM_WALLET_ADDRESS}
+
 
 @app.get("/health")
 def health():
@@ -361,7 +392,7 @@ def health():
 
 @app.post("/api/auth/telegram")
 def auth(body: AuthBody):
-    user=verify_init_data(body.init_data,body.start_param)
+    user=verify_init_data(body.init_data)
     tg_id=int(user["id"])
     with connect() as con:
         con.execute("""INSERT INTO users(tg_id,username,first_name,last_name,photo_url,created_at)
@@ -374,15 +405,6 @@ def auth(body: AuthBody):
                 if ref_id!=tg_id:
                     con.execute("INSERT OR IGNORE INTO referrals(referrer_id,referred_id,created_at) VALUES(?,?,?)",(ref_id,tg_id,now()))
             except ValueError: pass
-        # В локальном DEV_MODE один раз доводим тестовый баланс до 100 млрд ⭐.
-        # Работает только при DEV_MODE=true и не затрагивает production-аккаунты.
-        if DEV_MODE and not con.execute("SELECT 1 FROM transactions WHERE tg_id=? AND type='dev_seed_100b'",(tg_id,)).fetchone():
-            current_balance=con.execute("SELECT balance FROM users WHERE tg_id=?",(tg_id,)).fetchone()["balance"]
-            seed_amount=max(0,100_000_000_000-current_balance)
-            if seed_amount:
-                con.execute("UPDATE users SET balance=balance+? WHERE tg_id=?",(seed_amount,tg_id))
-            con.execute("INSERT INTO transactions(tg_id,type,amount,currency,status,note,created_at) VALUES(?,?,?,?,?,?,?)",
-                        (tg_id,"dev_seed_100b",seed_amount,"XTR","demo","Демо-баланс до 100 000 000 000 ⭐",now()))
         row=con.execute("SELECT * FROM users WHERE tg_id=?",(tg_id,)).fetchone()
     data=dict(row)
     data["is_admin"]=str(tg_id) in ADMIN_IDS
@@ -487,13 +509,13 @@ def open_case(case_id: str, user=Depends(current_user)):
             con.execute("UPDATE users SET balance=balance-? WHERE tg_id=?",(case["price_stars"],user["tg_id"]))
             cur=con.execute("INSERT INTO inventory(tg_id,gift_id,acquired_at) VALUES(?,?,?)",(user["tg_id"],selected,now()))
             inventory_id=cur.lastrowid
-        con.execute("INSERT INTO transactions(tg_id,type,amount,currency,status,reference,note,created_at) VALUES(?,?,?,?,?,?,?,?)",
-                    (user["tg_id"],"case_open",-case["price_stars"],"XTR","completed",case_id,selected,now()))
+        live_id=defer_live(con,con.execute("INSERT INTO transactions(tg_id,type,amount,currency,status,reference,note,created_at) VALUES(?,?,?,?,?,?,?,?)",
+                    (user["tg_id"],"case_open",-case["price_stars"],"XTR","completed",case_id,selected,now())).lastrowid)
         log_action(con,user["tg_id"],user["tg_id"],"case_open",
                    f"{case_id}:{selected};roll={roll};opening={opening_number};guaranteed={int(guaranteed)}")
         new_balance=con.execute("SELECT balance FROM users WHERE tg_id=?",(user["tg_id"],)).fetchone()["balance"]
         gift=con.execute("SELECT * FROM gifts WHERE id=?",(selected,)).fetchone()
-    return {"gift_id":selected,"gift":dict(gift),"star_reward":star_reward,
+    return {"gift_id":selected,"gift":dict(gift) if gift else None,"star_reward":star_reward,"live_id":live_id,
             "balance":new_balance,"roll":roll,"inventory_id":inventory_id,
             "opening_number":opening_number,"rare_guaranteed":guaranteed,
             "opens_until_guarantee":20-(opening_number%20)}
@@ -531,13 +553,13 @@ def open_case_batch(case_id: str, body: CaseOpenBatchBody, user=Depends(current_
                 cur=con.execute("INSERT INTO inventory(tg_id,gift_id,acquired_at) VALUES(?,?,?)",
                                 (user["tg_id"],selected,now()))
                 inventory_id=cur.lastrowid
-            con.execute("INSERT INTO transactions(tg_id,type,amount,currency,status,reference,note,created_at) VALUES(?,?,?,?,?,?,?,?)",
-                        (user["tg_id"],"case_open",-int(case["price_stars"]),"XTR","completed",case_id,selected,now()))
+            live_id=defer_live(con,con.execute("INSERT INTO transactions(tg_id,type,amount,currency,status,reference,note,created_at) VALUES(?,?,?,?,?,?,?,?)",
+                        (user["tg_id"],"case_open",-int(case["price_stars"]),"XTR","completed",case_id,selected,now())).lastrowid)
             log_action(con,user["tg_id"],user["tg_id"],"case_open",
                        f"{case_id}:{selected};batch={index+1}/{body.count};roll={roll};opening={opening_number};guaranteed={int(guaranteed)}")
             gift=con.execute("SELECT * FROM gifts WHERE id=?",(selected,)).fetchone()
             results.append({"gift_id":selected,"gift":dict(gift) if gift else None,
-                            "star_reward":star_reward,"inventory_id":inventory_id,"roll":roll,
+                            "star_reward":star_reward,"inventory_id":inventory_id,"roll":roll,"live_id":live_id,
                             "opening_number":opening_number,"rare_guaranteed":guaranteed,
                             "opens_until_guarantee":20-(opening_number%20)})
         con.execute("UPDATE users SET balance=? WHERE tg_id=?",(new_balance,user["tg_id"]))
@@ -710,6 +732,8 @@ def open_free_case(user=Depends(current_user)):
             )
             result = {"prize_type": "stars", "gift": None, "inventory_id": None, "star_reward": 2}
 
+        live_row=con.execute("SELECT id FROM transactions WHERE tg_id=? AND type IN ('free_case_gift','free_case_reward') ORDER BY id DESC LIMIT 1",(user["tg_id"],)).fetchone()
+        result["live_id"]=defer_live(con,live_row["id"])
         opened_at = now()
         cur = con.execute(
             "INSERT INTO free_case_opens(tg_id,prize_id,prize_type,created_at) VALUES(?,?,?,?)",
@@ -757,14 +781,17 @@ def upgrade(body: UpgradeBody, user=Depends(current_user)):
         chance_bp=min(9500,int(source["price_stars"]/target["price_stars"]*10000))
         roll=secrets.randbelow(10000); success=roll<chance_bp
         new_inventory_id=None
+        live_id=None
         if success:
             con.execute("UPDATE inventory SET status='upgraded' WHERE id=?",(body.inventory_id,))
             cur=con.execute("INSERT INTO inventory(tg_id,gift_id,acquired_at) VALUES(?,?,?)",(user["tg_id"],target["id"],now()))
             new_inventory_id=cur.lastrowid
+            live_id=defer_live(con,con.execute("INSERT INTO transactions(tg_id,type,amount,currency,status,reference,note,created_at) VALUES(?,?,?,?,?,?,?,?)",
+                        (user["tg_id"],"upgrade_win",0,"XTR","completed",str(new_inventory_id),target["id"],now())).lastrowid)
         else:
             con.execute("UPDATE inventory SET status='burned' WHERE id=?",(body.inventory_id,))
         log_action(con,user["tg_id"],user["tg_id"],"upgrade",f"{source['gift_id']}->{target['id']};chance={chance_bp};roll={roll};success={success}")
-    return {"success":success,"chance":chance_bp/100,"roll":roll,"gift_id":target["id"] if success else None,"inventory_id":new_inventory_id}
+    return {"success":success,"chance":chance_bp/100,"roll":roll,"gift_id":target["id"] if success else None,"inventory_id":new_inventory_id,"live_id":live_id}
 
 @app.post("/api/inventory/{inventory_id}/sell")
 def sell_inventory(inventory_id: int, user=Depends(current_user)):
@@ -839,13 +866,26 @@ def list_withdrawals(user=Depends(current_user)):
     with connect() as con:
         rows=con.execute("""SELECT w.*,g.name AS gift_name,g.image AS gift_image
           FROM withdrawal_requests w LEFT JOIN gifts g ON g.id=w.gift_id
-          WHERE w.tg_id=? ORDER BY w.id DESC LIMIT 20""",(user["tg_id"],)).fetchall()
+          WHERE w.tg_id=? AND (w.status!='paid' OR w.updated_at>=?) ORDER BY w.id DESC LIMIT 20""",(user["tg_id"],(datetime.now(timezone.utc)-timedelta(seconds=12)).isoformat())).fetchall()
     result=[]
     for row in rows:
         item=dict(row)
         item["gift_count"]=len(json.loads(item.get("inventory_ids_json") or "[]")) or (1 if item.get("inventory_id") else 0)
+        if item["status"]=="processing":
+            approved=datetime.fromisoformat(item["updated_at"])
+            if approved.tzinfo is None: approved=approved.replace(tzinfo=timezone.utc)
+            if (datetime.now(timezone.utc)-approved).total_seconds()>=6:
+                item["status"]="awaiting_payout"
         result.append(item)
     return result
+
+@app.post("/api/live/reveal")
+def reveal_live(body: LiveRevealBody,user=Depends(current_user)):
+    with connect() as con:
+        con.executemany("""UPDATE live_pending SET visible_at=MIN(visible_at,?) WHERE transaction_id IN
+          (SELECT id FROM transactions WHERE id=? AND tg_id=?)""",
+          [(now(),id,user["tg_id"]) for id in set(body.ids)])
+    return {"ok":True}
 
 @app.get("/api/live")
 def live_drops():
@@ -854,7 +894,10 @@ def live_drops():
           g.name AS gift_name,g.price_stars AS gift_price,g.image AS gift_image
           FROM transactions t JOIN users u ON u.tg_id=t.tg_id
           LEFT JOIN gifts g ON g.id=t.note
-          WHERE t.type IN ('case_open','crash_cashout','mines_cashout') ORDER BY t.id DESC LIMIT 12""").fetchall()
+          LEFT JOIN live_pending lp ON lp.transaction_id=t.id
+          WHERE t.type IN ('case_open','free_case_gift','free_case_reward','slots_nft_win','upgrade_win','crash_cashout','mines_cashout')
+            AND t.status='completed' AND (lp.visible_at IS NULL OR lp.visible_at<=?)
+          ORDER BY t.id DESC LIMIT 12""",(now(),)).fetchall()
     result=[]
     for row in rows:
         item=dict(row)
@@ -943,6 +986,7 @@ def slots_spin(body: SlotsSpinBody, user=Depends(current_user)):
         won=roll<1000
         selected=None
         inventory_id=None
+        live_id=None
         if won:
             selected=pool[secrets.randbelow(len(pool))]
         con.execute("UPDATE users SET balance=balance-? WHERE tg_id=?",(body.bet,user["tg_id"]))
@@ -954,9 +998,9 @@ def slots_spin(body: SlotsSpinBody, user=Depends(current_user)):
             cur=con.execute("INSERT INTO inventory(tg_id,gift_id,acquired_at) VALUES(?,?,?)",
                             (user["tg_id"],selected["id"],now()))
             inventory_id=cur.lastrowid
-            con.execute("""INSERT INTO transactions(tg_id,type,amount,currency,status,reference,note,created_at)
+            live_id=defer_live(con,con.execute("""INSERT INTO transactions(tg_id,type,amount,currency,status,reference,note,created_at)
               VALUES(?,?,?,?,?,?,?,?)""",
-              (user["tg_id"],"slots_nft_win",0,"XTR","completed",str(inventory_id),selected["id"],now()))
+              (user["tg_id"],"slots_nft_win",0,"XTR","completed",str(inventory_id),selected["id"],now())).lastrowid)
         log_action(con,user["tg_id"],user["tg_id"],"slots_spin",
                    f"bet={body.bet};roll={roll};win={int(won)};gift={selected['id'] if selected else ''}")
         new_balance=con.execute("SELECT balance FROM users WHERE tg_id=?",(user["tg_id"],)).fetchone()["balance"]
@@ -968,6 +1012,7 @@ def slots_spin(body: SlotsSpinBody, user=Depends(current_user)):
       "balance":new_balance,
       "bet":body.bet,
       "roll":roll,
+      "live_id":live_id,
       "win_probability":10
     }
 
@@ -1208,6 +1253,10 @@ def admin_withdrawal_status(request_id:int,body:WithdrawalStatusBody,admin=Depen
         if not req: raise HTTPException(404,"Заявка не найдена")
         if req["status"] in ("paid","rejected"):
             raise HTTPException(409,"Заявка уже закрыта")
+        if body.status=="processing" and req["status"]=="processing":
+            return {"ok":True,"status":"processing"}
+        if body.status=="paid" and req["status"]!="processing":
+            raise HTTPException(409,"Сначала подтвердите заявку")
         con.execute("UPDATE withdrawal_requests SET status=?,updated_at=?,admin_note=? WHERE id=?",
                     (body.status,now(),body.admin_note,request_id))
         gift_inventory_ids=json.loads(req["inventory_ids_json"] or "[]") if req["asset_type"]=="gift" else []
@@ -1263,3 +1312,13 @@ def add_stars_from_payment(tg_id:int, amount:int, charge_id:str, payload:str):
                     (tg_id,"deposit",amount,"XTR","completed",charge_id,"Telegram Stars payment",now()))
         log_action(con,None,tg_id,"stars_deposit",f"{amount};{charge_id}")
     return True
+
+
+# Production Mini App static files. API routes are registered above this mount.
+WEBAPP_DIR = PROJECT / "webapp"
+if not (WEBAPP_DIR / "index.html").is_file():
+    legacy_dir = PROJECT / "frontend" / "dist"
+    if (legacy_dir / "index.html").is_file():
+        WEBAPP_DIR = legacy_dir
+if (WEBAPP_DIR / "index.html").is_file():
+    app.mount("/", StaticFiles(directory=WEBAPP_DIR, html=True), name="frontend")

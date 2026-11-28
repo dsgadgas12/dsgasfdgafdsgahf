@@ -8,14 +8,12 @@ import {
   TrendingUp, Headphones, BookOpen, Globe, Ticket, Clock3, Plane,
   CheckCircle2, XCircle, CalendarDays, ArrowDownToLine, CircleDollarSign, Mail, Bot, ArrowUpRight, ArrowDownUp, ChevronDown
 } from "lucide-react";
-import giftsRaw from "./data/gifts.json";
-import casesRaw from "./data/cases.json";
 import { api, setAuthToken } from "./api";
 import TgsSticker from "./components/TgsSticker";
 
 type GiftItem = {
-  id: string; name: string; price_stars: number; price_usd: number;
-  image: string | null; rarity: string; source_archive: string; image_status: string;
+  id: string; name: string; price_stars: number;
+  image: string | null; rarity: string; image_status: string;
 };
 type CasePrize = { gift_id: string; weight_bp: number };
 type CaseItem = {
@@ -24,7 +22,7 @@ type CaseItem = {
 };
 type WithdrawalRequest = {
   id:number; asset_type:"stars"|"gift"; amount:number|null; gift_id:string|null;
-  gift_name?:string; gift_count?:number; status:string; submitted_at:string; destination:string;
+  gift_name?:string; gift_count?:number; status:string; submitted_at:string; updated_at?:string; destination:string;
 };
 type CrashPlayer = {
   tg_id:number; amount:number; status:"pending"|"cashed"|"lost";
@@ -39,59 +37,19 @@ type CrashState = {
 type OwnedGift = { uid: string; giftId: string; acquiredAt: number };
 type Page = "games"|"leaders"|"shop"|"profile"|"cases"|"case-detail"|"free-case"|"upgrade"|"slots"|"crash"|"mines"|"admin";
 
-const gifts = giftsRaw as GiftItem[];
-const cases = casesRaw as CaseItem[];
-const freeCaseGifts = gifts
-  .filter(g => g.price_stars >= 800 && g.image_status !== "star")
-  .sort((a,b) => b.price_stars-a.price_stars);
-const freeCaseStarAmounts = [2,5,10,25,50,100,250,500,700];
-const freeCase: CaseItem = {
-  id: "free-case",
-  name: "Бесплатный кейс",
-  price_stars: 0,
-  category: "nft",
-  theme: "mythic",
-  description: "Бесплатное открытие",
-  banner: "assets/banners/free-case.png",
-  items: [
-    ...freeCaseStarAmounts.map(amount => ({gift_id:`stars-${amount}`,weight_bp:0})),
-    ...freeCaseGifts.map(g => ({gift_id:g.id,weight_bp:0}))
-  ]
-};
-const byId = new Map<string,GiftItem>(gifts.map(g => [g.id, g] as const));
+type Catalog = { gifts: GiftItem[]; cases: CaseItem[]; byId: Map<string, GiftItem> };
+const emptyCatalog: Catalog = { gifts: [], cases: [], byId: new Map() };
+const CatalogContext = React.createContext<Catalog>(emptyCatalog);
 const fmt = (n:number) => Math.round(n).toLocaleString("ru-RU");
 const imageSrc = (g:GiftItem) => g.image ? `/${g.image}` : "";
 const rarityClass = (r:string) => ({
   "Обычный":"common","Необычный":"uncommon","Редкий":"rare",
   "Эпический":"epic","Легендарный":"legendary","Мифический":"mythic"
 }[r] || "common");
-const readStored = <T,>(key:string, fallback:T):T => {
-  try { const raw=localStorage.getItem(key); return raw ? JSON.parse(raw) as T : fallback; }
-  catch { return fallback; }
-};
-const pickPrize = (c:CaseItem):CasePrize => {
-  const roll = crypto.getRandomValues(new Uint32Array(1))[0] % 10000;
-  let acc=0;
-  for (const item of c.items) { acc += item.weight_bp; if (roll < acc) return item; }
-  return c.items[c.items.length-1];
-};
-const pickDemoCasePrize = (c:CaseItem):CasePrize => {
-  const key=`cloudegift_demo_case_opens_${c.id}`;
-  const openingNumber=readStored<number>(key,0)+1;
-  try { localStorage.setItem(key,JSON.stringify(openingNumber)); } catch {}
-  const premium=c.items.filter(item=>!isStarPrize(item)&&(byId.get(item.gift_id)?.price_stars||0)>=c.price_stars);
-  const common=c.items.filter(item=>isStarPrize(item)?["stars-100","stars-300"].includes(item.gift_id):(byId.get(item.gift_id)?.price_stars||0)<c.price_stars);
-  const pool=openingNumber%20===0?premium:common;
-  const safePool=pool.length?pool:c.items;
-  const total=safePool.reduce((sum,item)=>sum+Math.max(0,item.weight_bp),0);
-  let roll=crypto.getRandomValues(new Uint32Array(1))[0]%Math.max(1,total);
-  for(const item of safePool){roll-=Math.max(0,item.weight_bp);if(roll<0)return item;}
-  return safePool[safePool.length-1];
-};
 const isStarPrize=(p:CasePrize)=>p.gift_id.startsWith("stars-");
 const starPrizeAmount=(p:CasePrize)=>isStarPrize(p)?Number(p.gift_id.split("-")[1]):0;
 const starTier=(n:number)=>n<=80?"star-grey":n<=300?"star-blue":n<=999?"star-pink":"star-red";
-const prizeName=(p:CasePrize)=>isStarPrize(p)?`${fmt(starPrizeAmount(p))} ⭐`:byId.get(p.gift_id)?.name||"Подарок";
+const prizeName=(p:CasePrize, byId:Map<string,GiftItem>)=>isStarPrize(p)?`${fmt(starPrizeAmount(p))} ⭐`:byId.get(p.gift_id)?.name||"Подарок";
 const prettyDate=(value:string)=>new Date(value).toLocaleString("ru-RU",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});
 const formatCompactCountdown=(milliseconds:number)=>{
   const ms=Math.max(0,Math.floor(milliseconds));
@@ -127,6 +85,7 @@ function GiftImage({gift, className=""}:{gift:GiftItem;className?:string}) {
     : <div className={`gift-placeholder ${className}`}><Package size={28}/><small>Нет модели</small></div>;
 }
 function PrizeVisual({prize,className=""}:{prize:CasePrize;className?:string}) {
+  const {byId}=React.useContext(CatalogContext);
   if(isStarPrize(prize)) {
     const amount=starPrizeAmount(prize);
     return <div className={`star-prize-visual ${starTier(amount)} ${className}`}><CurrencyIcon/><b>{fmt(amount)}</b></div>;
@@ -201,6 +160,7 @@ function CaseRoulette({c,selected,fast,onComplete}:{c:CaseItem;selected:CasePriz
   </div>;
 }
 function CaseMultiPreview({c,count}:{c:CaseItem;count:number}) {
+  const {byId}=React.useContext(CatalogContext);
   const rows=useMemo(()=>Array.from({length:count},()=>{
     const source=c.items.length?c.items:[{gift_id:"stars-2",weight_bp:10000}];
     const shuffled=[...source].sort(()=>Math.random()-.5);
@@ -210,7 +170,7 @@ function CaseMultiPreview({c,count}:{c:CaseItem;count:number}) {
     {rows.map((row,lane)=><div className="case-multi-preview-row case-idle-window" key={`${c.id}-${count}-${lane}`}>
       <div className="case-idle-track" style={{animationDuration:`${row.length*(count===1?2.5:1.8)}s`,animationDelay:`-${lane*3}s`}}>
         {[0,1].map(copy=><div className="case-idle-group" key={copy} aria-hidden={copy===1?true:undefined}>{row.map((prize,i)=><div className="case-idle-cell" key={`${i}-${prize.gift_id}`}>
-          <PrizeVisual prize={prize}/>{count===1&&<><b>{prizeName(prize)}</b><StarPrice value={isStarPrize(prize)?starPrizeAmount(prize):byId.get(prize.gift_id)?.price_stars||0}/></>}
+          <PrizeVisual prize={prize}/>{count===1&&<><b>{prizeName(prize,byId)}</b><StarPrice value={isStarPrize(prize)?starPrizeAmount(prize):byId.get(prize.gift_id)?.price_stars||0}/></>}
         </div>)}</div>)}
       </div>
     </div>)}
@@ -251,7 +211,13 @@ function Modal({children,onClose,title="CloudeGift"}:{children:React.ReactNode;o
 }
 
 export default function App() {
+  const [catalog,setCatalog]=useState<Catalog>(emptyCatalog);
+  const {gifts,byId}=catalog;
   const [introVisible,setIntroVisible]=useState(()=>{try{return !sessionStorage.getItem("cg_intro_seen");}catch{return true;}});
+  const finishIntro=React.useCallback(()=>{
+    try{sessionStorage.setItem("cg_intro_seen","1");}catch{}
+    setIntroVisible(false);
+  },[]);
   const [page,setPage]=useState<Page>("games");
   const [pageHistory,setPageHistory]=useState<Page[]>([]);
   const [activeCase,setActiveCase]=useState<CaseItem|null>(null);
@@ -267,14 +233,13 @@ export default function App() {
   const [caseFastMode,setCaseFastMode]=useState(false);
   const [rouletteFastMode,setRouletteFastMode]=useState(false);
   const [opening,setOpening]=useState(false);
+  const openingLock=useRef(false);
+  const liveRevealIds=useRef<number[]>([]);
   const [upgradeBusy,setUpgradeBusy]=useState(false);
   const reducedMotion=useReducedMotion();
   const [toast,setToast]=useState("");
-  const [balance,setBalance]=useState<number>(()=>{
-    const demoBalance=Number(import.meta.env.VITE_DEMO_BALANCE||0);
-    return demoBalance>0?demoBalance:Number(localStorage.getItem("cg_balance")||2500);
-  });
-  const [inventory,setInventory]=useState<OwnedGift[]>(()=>readStored("cg_inventory",[]));
+  const [balance,setBalance]=useState<number>(0);
+  const [inventory,setInventory]=useState<OwnedGift[]>([]);
   const [search,setSearch]=useState("");
   const [sort,setSort]=useState<"asc"|"desc">("asc");
   const [rarityFilter,setRarityFilter]=useState("Все");
@@ -284,17 +249,21 @@ export default function App() {
   const [topupAmount,setTopupAmount]=useState("1000");
   const [gramAmount,setGramAmount]=useState("10");
   const [gramMemo]=useState(makeDepositMemo);
-  const gramWallet=import.meta.env.VITE_GRAM_WALLET_ADDRESS || "";
+  const [gramWallet,setGramWallet]=useState("");
   const [withdrawOpen,setWithdrawOpen]=useState(false);
   const [withdrawType,setWithdrawType]=useState<"stars"|"gift">("stars");
   const [withdrawAmount,setWithdrawAmount]=useState("1500");
   const [withdrawDestination,setWithdrawDestination]=useState("");
   const [withdrawInventoryUids,setWithdrawInventoryUids]=useState<string[]>([]);
   const [withdrawals,setWithdrawals]=useState<WithdrawalRequest[]>([]);
+  const [withdrawalsState,setWithdrawalsState]=useState<"loading"|"ready"|"error">("loading");
+  const withdrawalRevision=useRef(0);
   const [liveDrops,setLiveDrops]=useState<any[]>([]);
   const [token,setToken]=useState("");
   const [profile,setProfile]=useState<any>(null);
-  const [isAdmin,setIsAdmin]=useState(import.meta.env.VITE_DEMO_ADMIN==="true");
+  const [isAdmin,setIsAdmin]=useState(false);
+  const [authStatus,setAuthStatus]=useState<"checking"|"ready"|"telegram_required"|"error">("checking");
+  const [authError,setAuthError]=useState("");
   const [shopCategory,setShopCategory]=useState("Все");
   const [freeCaseInfo,setFreeCaseInfo]=useState<any>(null);
   const [freeCaseRemainingMs,setFreeCaseRemainingMs]=useState(0);
@@ -307,46 +276,79 @@ export default function App() {
 
   const tg = window.Telegram?.WebApp;
   const user = tgUser();
-  const displayName = profile?.first_name || [user?.first_name,user?.last_name].filter(Boolean).join(" ") || "Гость";
-  const username = profile?.username || user?.username || "";
-  const userId = profile?.tg_id || user?.id || "DEMO";
+  const displayName = profile?.first_name || [user?.first_name,user?.last_name].filter(Boolean).join(" ") || "Пользователь";
+  const userId = profile?.tg_id || user?.id || "";
   const photoUrl = profile?.photo_url || user?.photo_url || "";
-  const adminIds = (import.meta.env.VITE_ADMIN_IDS || "").split(",").map(x=>x.trim()).filter(Boolean);
-  const adminAllowed = isAdmin || (!!user?.id && adminIds.includes(String(user.id)));
+  const adminAllowed = isAdmin;
 
   useEffect(()=>{
-    tg?.ready(); tg?.expand();
-    const apiUrl=import.meta.env.VITE_API_URL;
-    if (tg?.initData || (apiUrl && import.meta.env.DEV)) {
-      const devUser=new URLSearchParams(window.location.search).get("dev_user");
-      const startParam=tg?.initDataUnsafe?.start_param || (devUser&&/^\d+$/.test(devUser)?`dev_${devUser}`:"");
-      api("/api/auth/telegram",{init_data:tg?.initData || "",start_param:startParam}).then(async (res:any)=>{
-        setToken(res.access_token); setAuthToken(res.access_token); setProfile(res.user);
-        setIsAdmin(!!res.user?.is_admin);
-        setBalance(res.user?.balance ?? 0);
-        const me:any=await api("/api/me");
-        setInventory((me.inventory || []).map((x:any)=>({uid:String(x.inventory_id),giftId:x.gift_id,acquiredAt:Date.parse(x.acquired_at)})));
-      }).catch(()=>{});
+    let active=true;
+    api<any>("/api/public-config").then(config=>{
+      if(active)setGramWallet(String(config?.gram_wallet_address||""));
+    }).catch(()=>{});
+    return()=>{active=false;};
+  },[]);
+
+  useEffect(()=>{
+    tg?.ready();
+    tg?.expand();
+    if(!tg?.initData){
+      setAuthStatus("telegram_required");
+      return;
     }
+    let active=true;
+    api("/api/auth/telegram",{
+      init_data:tg.initData,
+      start_param:tg.initDataUnsafe?.start_param || ""
+    }).then(async (res:any)=>{
+      if(!active)return;
+      setToken(res.access_token);
+      setAuthToken(res.access_token);
+      setProfile(res.user);
+      setIsAdmin(!!res.user?.is_admin);
+      const [me,serverGifts,serverCases]=await Promise.all([
+        api<any>("/api/me"),
+        api<GiftItem[]>("/api/catalog/gifts"),
+        api<CaseItem[]>("/api/cases")
+      ]);
+      if(!active)return;
+      if(!serverGifts.length || !serverCases.length)throw new Error("Сервер вернул пустой каталог кейсов или подарков.");
+      setCatalog({gifts:serverGifts,cases:serverCases,byId:new Map(serverGifts.map(g=>[g.id,g]))});
+      setBalance(Number(me.user?.balance)||0);
+      setInventory((me.inventory||[]).map((x:any)=>({uid:String(x.inventory_id),giftId:x.gift_id,acquiredAt:Date.parse(x.acquired_at)})));
+      setAuthStatus("ready");
+    }).catch((error:any)=>{
+      if(!active)return;
+      setAuthError(error?.message||"Не удалось проверить Telegram-профиль");
+      setAuthStatus("error");
+    });
+    return()=>{active=false;};
   },[]);
   useEffect(()=>{
     if(!token)return;
     let alive=true;
+    let withdrawalInFlight=false;
+    const refreshWithdrawals=async()=>{
+      if(withdrawalInFlight)return;
+      withdrawalInFlight=true;
+      const revision=withdrawalRevision.current;
+      try{
+        const requests=await api<WithdrawalRequest[]>("/api/withdrawals");
+        if(alive&&revision===withdrawalRevision.current){setWithdrawals(requests);setWithdrawalsState("ready");}
+      }catch{if(alive&&revision===withdrawalRevision.current)setWithdrawalsState("error");}
+      finally{withdrawalInFlight=false;}
+    };
     const refresh=async()=>{
       try {
-        const [requests,events,me]=await Promise.all([
-          api<WithdrawalRequest[]>("/api/withdrawals"),
-          api<any[]>("/api/live"),
-          api<any>("/api/me")
+        await Promise.allSettled([
+          refreshWithdrawals(),
+          api<any[]>("/api/live").then(events=>{if(alive)setLiveDrops(events);}),
+          api<any>("/api/me").then(me=>{if(alive)setInventory((me.inventory||[]).map((x:any)=>({uid:String(x.inventory_id),giftId:x.gift_id,acquiredAt:Date.parse(x.acquired_at)})));})
         ]);
-        if(alive){
-          setWithdrawals(requests);setLiveDrops(events);
-          setInventory((me.inventory||[]).map((x:any)=>({uid:String(x.inventory_id),giftId:x.gift_id,acquiredAt:Date.parse(x.acquired_at)})));
-        }
       } catch {}
     };
     refresh();
-    const id=window.setInterval(refresh,5000);
+    const id=window.setInterval(refresh,3000);
     return()=>{alive=false;window.clearInterval(id);};
   },[token]);
   useEffect(()=>{
@@ -373,25 +375,6 @@ export default function App() {
     return()=>{cancelled=true;};
   },[freeCaseModalOpen,token,sharePrepared,freeCaseInfo?.share_complete]);
   useEffect(()=>{
-    if(token || !import.meta.env.DEV)return;
-    const makeDrop=()=>{
-      const roll=Math.random();
-      if(roll<0.2){
-        const amounts=[10,25,50,80,100,250,500,1000];
-        const amount=amounts[Math.floor(Math.random()*amounts.length)];
-        return {id:`demo-${Date.now()}-${Math.random()}`,type:"case_open",gift_name:null,gift_price:null,star_reward:amount,demo:true};
-      }
-      const pool=roll<0.66?gifts.filter(g=>g.price_stars<2500):roll<0.88?gifts.filter(g=>g.price_stars>=2500&&g.price_stars<9000):gifts.filter(g=>g.price_stars>=9000);
-      const gift=pool[Math.floor(Math.random()*pool.length)]||gifts[Math.floor(Math.random()*gifts.length)];
-      return {id:`demo-${Date.now()}-${Math.random()}`,type:"case_open",gift_name:gift.name,gift_price:gift.price_stars,gift_image:gift.image,star_reward:null,demo:true};
-    };
-    setLiveDrops(Array.from({length:8},makeDrop));
-    const timer=window.setInterval(()=>setLiveDrops(old=>[makeDrop(),...old].slice(0,12)),2600);
-    return()=>window.clearInterval(timer);
-  },[token]);
-  useEffect(()=>{localStorage.setItem("cg_balance",String(balance));},[balance]);
-  useEffect(()=>{localStorage.setItem("cg_inventory",JSON.stringify(inventory));},[inventory]);
-  useEffect(()=>{
     if(!toast) return;
     const t=window.setTimeout(()=>setToast(""),2600);
     return ()=>window.clearTimeout(t);
@@ -417,20 +400,24 @@ export default function App() {
     catch{notify("Не удалось скопировать. Выдели текст вручную.");}
   };
   const openGramTopup=async()=>{
-    if(!gramWallet){notify("Пополнение GRAM пока недоступно");return;}
+    if(!gramWallet){notify("Адрес кошелька пока не настроен");return;}
+    const amount=Number(gramAmount);
+    if(!Number.isFinite(amount)||amount<=0){notify("Укажи корректную сумму перевода");return;}
+    const amountNano=Math.round(amount*1_000_000_000);
+    if(!Number.isSafeInteger(amountNano)||amountNano<=0){notify("Сумма слишком большая или некорректная");return;}
     try{await navigator.clipboard.writeText(gramMemo);}catch{}
     setTopupOpen(false);
-    openExternalUrl(`https://app.tonkeeper.com/transfer/${encodeURIComponent(gramWallet)}?text=${encodeURIComponent(`${gramMemo} · ${gramAmount} GRAM`)}`);
-    notify(`Адрес и memo подготовлены. В Tonkeeper выбери GRAM и введи ${fmt(Number(gramAmount)||0)} GRAM перед подтверждением.`);
+    const params=new URLSearchParams({amount:String(amountNano),text:gramMemo});
+    openExternalUrl(`https://app.tonkeeper.com/transfer/${encodeURIComponent(gramWallet)}?${params.toString()}`);
+    notify(`Tonkeeper открыт: проверь адрес, сумму ${fmt(amount)} GRAM и memo перед подтверждением.`);
   };
-  const addOwned=(giftId:string,uid?:string)=>{
-    const newUid=uid || `${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
-    setInventory(old=>[...old,{uid:newUid,giftId,acquiredAt:Date.now()}]);
-    return newUid;
+  const addOwned=(giftId:string,uid:string)=>{
+    if(!/^\d+$/.test(uid))throw new Error("Сервер не вернул ID предмета в инвентаре");
+    setInventory(old=>old.some(item=>item.uid===uid)?old:[...old,{uid,giftId,acquiredAt:Date.now()}]);
+    return uid;
   };
   const removeOwned=(uid:string)=>setInventory(old=>old.filter(x=>x.uid!==uid));
   const ownedGift=(item:OwnedGift)=>byId.get(item.giftId);
-  const ownedValue=inventory.reduce((sum,x)=>sum+(byId.get(x.giftId)?.price_stars||0),0);
 
   const go=(p:Page)=>{
     if(opening||upgradeBusy){notify("Дождитесь результата");return;}
@@ -463,7 +450,7 @@ export default function App() {
     }
     back?.hide();
   },[page,pageHistory,opening,upgradeBusy]);
-  const openGiftModal=(gift:GiftItem,inventoryUid="")=>{setModalGift(gift);setModalInventoryUid(inventoryUid);};
+  const openGiftModal=(gift:GiftItem,inventoryUid="")=>{if(!token)return;setModalGift(gift);setModalInventoryUid(inventoryUid);};
 
   const openFreeCaseTasks=async()=>{
     setFreeCaseModalOpen(true);
@@ -479,22 +466,23 @@ export default function App() {
     setShareSending(true);
     try{
       tg.shareMessage(prepared.message_id,async(sent:boolean)=>{
-        setShareSending(false);
-        if(!sent){notify("Отправка отменена");return;}
+        if(!sent){setShareSending(false);notify("Отправка отменена");return;}
         try{
           const result:any=await api("/api/free-case/share/complete",{share_token:prepared.share_token});
+          const shares=Number(result.shares_sent)||0;
+          const shareDone=shares>=3;
+          setFreeCaseInfo((old:any)=>({...old,shares_sent:shares,share_complete:shareDone,tasks_complete:shareDone&&!!old?.subscribed}));
+          setFreeCaseTaskCheck(old=>({share:shareDone,channel:old?.channel??!!freeCaseInfo?.subscribed}));
           setSharePrepared(null);
-          const info:any=await refreshFreeCaseInfo();
-          setFreeCaseTaskCheck(old=>{
-            const shareDone=Number(result.shares_sent)>=3;
-            if(old)return {share:shareDone,channel:old.channel};
-            return shareDone?{share:true,channel:!!info?.subscribed}:null;
-          });
-          notify(Number(result.shares_sent)>=3?"Отправка подтверждена":"Сообщение отправлено");
+          notify(shareDone?"3/3 · отправка засчитана":`Отправка засчитана · ${shares}/3`);
+          if(shareDone){
+            if(freeCaseInfo?.subscribed)setFreeCaseModalOpen(false);
+            else refreshFreeCaseInfo().then(info=>{if(info?.tasks_complete)setFreeCaseModalOpen(false);}).catch(()=>{});
+          }
         }catch(error:any){
           setSharePrepared(null);
           notify("Не удалось подтвердить отправку: "+error.message);
-        }
+        }finally{setShareSending(false);}
       });
     }catch(error:any){
       setShareSending(false);
@@ -526,10 +514,10 @@ export default function App() {
   };
 
   async function openCase(c:CaseItem,fast=false) {
+    if(!token){notify("Открой приложение через Telegram, чтобы играть");return;}
     const count=c.id==="free-case"?1:Math.max(1,Math.min(5,caseOpenCount));
     const totalCost=c.price_stars*count;
     if(c.id==="free-case"){
-      if(!token){await openFreeCaseTasks();notify("Для открытия подключи Telegram и backend");return;}
       try{
         const info:any=await refreshFreeCaseInfo();
         if(!info?.tasks_complete){
@@ -544,6 +532,9 @@ export default function App() {
       }catch(error:any){notify("Не удалось проверить бесплатный кейс: "+error.message);return;}
     }
     if(totalCost>0 && balance<totalCost){notify("Недостаточно ⭐ на балансе");return;}
+    if(openingLock.current)return;
+    openingLock.current=true;
+    liveRevealIds.current=[];
     tap();
     setOpening(true);
     setRoulettePrizes(null);
@@ -556,38 +547,34 @@ export default function App() {
       let prizes:CasePrize[]=[];
       if(c.id==="free-case") {
         const res:any=await api("/api/free-case/open",{});
+        if(res.live_id)liveRevealIds.current=[res.live_id];
         setBalance(res.balance);
         setFreeCaseInfo((old:any)=>({...old,can_open:false,next_open_at:res.next_open_at,remaining_ms:res.remaining_ms}));
         if(res.prize_type==="gift" && res.gift) {
+          if(!res.inventory_id)throw new Error("Сервер не вернул ID выигранного NFT");
           prizes=[{gift_id:res.gift.id,weight_bp:0}];
-          if(res.inventory_id) {
-            const inventoryUid=String(res.inventory_id);
-            addOwned(res.gift.id,inventoryUid);
-            setLastWonInventoryUid(inventoryUid);
-          }
+          const inventoryUid=String(res.inventory_id);
+          addOwned(res.gift.id,inventoryUid);
+          setLastWonInventoryUid(inventoryUid);
         } else {
           prizes=[{gift_id:`stars-${res.star_reward||2}`,weight_bp:0}];
         }
-      } else if(token) {
+      } else {
         const res:any=await api(`/api/cases/${c.id}/open-batch`,{count});
+        liveRevealIds.current=(res.results||[]).map((x:any)=>x.live_id).filter(Boolean);
         setBalance(res.balance);
         prizes=(res.results||[]).map((result:any)=>({gift_id:result.gift_id,weight_bp:0}));
         let lastUid="";
         (res.results||[]).forEach((result:any)=>{
-          if(result.inventory_id){lastUid=addOwned(result.gift_id,String(result.inventory_id));}
+          if(!String(result.gift_id).startsWith("stars-")&&!result.inventory_id)throw new Error("Сервер не вернул ID выигранного NFT");
+          if(result.inventory_id)lastUid=addOwned(result.gift_id,String(result.inventory_id));
         });
-        if(lastUid)setLastWonInventoryUid(lastUid);
-      } else {
-        prizes=Array.from({length:count},()=>pickDemoCasePrize(c));
-        const starReturn=prizes.reduce((sum,prize)=>sum+(isStarPrize(prize)?starPrizeAmount(prize):0),0);
-        setBalance(value=>value-totalCost+starReturn);
-        let lastUid="";
-        prizes.forEach(prize=>{if(!isStarPrize(prize))lastUid=addOwned(prize.gift_id);});
         if(lastUid)setLastWonInventoryUid(lastUid);
       }
       if(!prizes.length)throw new Error("Сервер не вернул результаты открытия");
       setRoulettePrizes(prizes);
     } catch(e:any) {
+      openingLock.current=false;
       setOpening(false);
       setRoulettePrizes(null);
       notify("Не удалось открыть кейс: "+e.message);
@@ -596,6 +583,10 @@ export default function App() {
   const finishRoulette=()=>{
     if(!roulettePrizes?.length)return;
     const prizes=roulettePrizes;
+    openingLock.current=false;
+    const ids=liveRevealIds.current;
+    liveRevealIds.current=[];
+    if(ids.length)api("/api/live/reveal",{ids}).then(()=>api<any[]>("/api/live")).then(setLiveDrops).catch(()=>{});
     setOpening(false);
     setRoulettePrizes(null);
     setRouletteFastMode(false);
@@ -607,14 +598,13 @@ export default function App() {
   };
 
   async function sellInventory(uid:string) {
+    if(!token || !/^\d+$/.test(uid)){notify("Нет подтверждённой серверной сессии");return;}
     const owned=inventory.find(x=>x.uid===uid);
     const gift=owned?byId.get(owned.giftId):undefined;
     if(!owned||!gift)return;
     try {
-      if(token && /^\d+$/.test(uid)) {
-        const res:any=await api(`/api/inventory/${uid}/sell`,{});
-        setBalance(res.balance);
-      } else setBalance(v=>v+gift.price_stars);
+      const res:any=await api(`/api/inventory/${uid}/sell`,{});
+      setBalance(res.balance);
       removeOwned(uid);setModalGift(null);setModalInventoryUid("");
       notify(`${gift.name} продан за ${fmt(gift.price_stars)} ⭐`);
     } catch(e:any){notify("Не удалось продать подарок: "+e.message);}
@@ -628,6 +618,7 @@ export default function App() {
     setWithdrawOpen(true);
   };
   async function submitWithdrawal() {
+    if(!token){notify("Нет подтверждённой серверной сессии");return;}
     const destination=withdrawDestination.trim();
     if(!destination){notify("Укажи адрес или Telegram для получения");return;}
     const amount=Math.max(1,Math.floor(Number(withdrawAmount)||0));
@@ -636,33 +627,28 @@ export default function App() {
     if(withdrawType==="gift"&&withdrawInventoryUids.length<2){notify("Выбери минимум 2 NFT");return;}
     if(withdrawType==="gift"&&withdrawInventoryUids.some(uid=>!inventory.some(x=>x.uid===uid))){notify("Один из подарков больше недоступен");return;}
     try {
-      if(token) {
-        const body:any={asset_type:withdrawType,destination};
-        if(withdrawType==="stars")body.amount=amount;
-        else body.inventory_ids=withdrawInventoryUids.map(Number);
-        const res:any=await api("/api/withdrawals",body);
-        if(withdrawType==="stars")setBalance(res.balance??(balance-amount));
-        else withdrawInventoryUids.forEach(removeOwned);
-        setWithdrawals(old=>[{id:res.id,asset_type:withdrawType,amount:withdrawType==="stars"?amount:null,gift_id:null,gift_count:withdrawType==="gift"?withdrawInventoryUids.length:0,status:"pending",submitted_at:res.submitted_at,destination},...old]);
-      } else {
-        const request:WithdrawalRequest={id:Date.now(),asset_type:withdrawType,amount:withdrawType==="stars"?amount:null,gift_id:null,status:"pending",submitted_at:new Date().toISOString(),destination};
-        setWithdrawals(old=>[request,...old]);
-        if(withdrawType==="stars")setBalance(v=>v-amount);else withdrawInventoryUids.forEach(removeOwned);
-      }
+      const body:any={asset_type:withdrawType,destination};
+      if(withdrawType==="stars")body.amount=amount;
+      else body.inventory_ids=withdrawInventoryUids.map(Number);
+      const res:any=await api("/api/withdrawals",body);
+      if(withdrawType==="stars")setBalance(res.balance??(balance-amount));
+      else withdrawInventoryUids.forEach(removeOwned);
+      withdrawalRevision.current++;
+      setWithdrawalsState("ready");
+      setWithdrawals(old=>[{id:res.id,asset_type:withdrawType,amount:withdrawType==="stars"?amount:null,gift_id:null,gift_count:withdrawType==="gift"?withdrawInventoryUids.length:0,status:"pending",submitted_at:res.submitted_at,destination},...old.filter(w=>w.id!==res.id)]);
       setWithdrawOpen(false);
-      notify("Заявка принята. Статус доступен в разделе «Вывести» → «Мои заявки».");
+      setPageHistory([]);setPage("profile");setActiveCase(null);
+      notify("Заявка принята. Статус — в профиле, в разделе «Заявки на выплату».");
     } catch(e:any){notify("Не удалось создать заявку: "+e.message);}
   }
 
   async function buyGift(g:GiftItem) {
+    if(!token){notify("Открой приложение через Telegram, чтобы покупать подарки");return;}
     if(balance<g.price_stars){notify("Недостаточно ⭐ на балансе");return;}
     try {
-      if(token) {
-        const res:any=await api(`/api/shop/${g.id}/buy`,{});
-        setBalance(res.balance); addOwned(g.id,String(res.inventory_id));
-      } else {
-        setBalance(v=>v-g.price_stars); addOwned(g.id);
-      }
+      const res:any=await api(`/api/shop/${g.id}/buy`,{});
+      if(!res.inventory_id)throw new Error("Сервер не вернул ID покупки");
+      setBalance(res.balance); addOwned(g.id,String(res.inventory_id));
       setModalGift(null); notify(`${g.name} добавлен в инвентарь`); tap();
     } catch(e:any){notify("Покупка не прошла: "+e.message);}
   }
@@ -679,8 +665,8 @@ export default function App() {
         });
       } else notify("Счёт создан. Открой его в Telegram.");
       setTopupOpen(false);
-    } catch {
-      notify("Пополнение включится после настройки Telegram-бота. Сейчас это демо.");
+    } catch(error:any) {
+      notify("Не удалось создать счёт: "+(error?.message||"ошибка сервера"));
     }
   }
 
@@ -698,7 +684,25 @@ export default function App() {
       (rarityFilter==="Все"||g.rarity===rarityFilter) &&
       (shopCategory==="Все"||g.rarity===shopCategory)
     ).sort((a,b)=>sort==="asc"?a.price_stars-b.price_stars:b.price_stars-a.price_stars);
-  },[search,sort,rarityFilter,shopCategory]);
+  },[gifts,search,sort,rarityFilter,shopCategory]);
+
+  if(authStatus==="checking" || (authStatus==="ready" && introVisible)){
+    return <IntroSplash onDone={finishIntro} loop={!introVisible && authStatus==="checking"}/>;
+  }
+  if(authStatus!=="ready"){
+    return <div className="app-shell auth-gate">
+      <header className="topbar auth-topbar">
+        <img className="brand-logo" src="/assets/cloudegift-logo.png" alt="CloudeGift" />
+      </header>
+      <main className="auth-gate-content">
+        <div className="auth-gate-card">
+          <h1>{authStatus==="telegram_required"?"Откройте CloudeGift в Telegram":"Не удалось войти"}</h1>
+          <p>{authStatus==="telegram_required"?"Баланс, инвентарь и игровые действия доступны только после проверки Telegram-профиля. Откройте приложение через кнопку бота.":authError||"Проверьте настройки бота и попробуйте открыть приложение ещё раз."}</p>
+          {authStatus==="error"&&<button type="button" className="btn btn-primary" onClick={()=>window.location.reload()}>Повторить вход</button>}
+        </div>
+      </main>
+    </div>;
+  }
 
   const nav=[
     {id:"games" as Page,label:"Игры",icon:Gamepad2},
@@ -707,7 +711,7 @@ export default function App() {
     {id:"profile" as Page,label:"Профиль",icon:UserCircle},
   ];
 
-  return <MotionConfig reducedMotion="user"><div className={`app-shell ${page==="profile"?"is-profile":""}`}>
+  return <CatalogContext.Provider value={catalog}><MotionConfig reducedMotion="user"><div className={`app-shell ${page==="profile"?"is-profile":""}`}>
     {page==="profile"&&<div className="profile-clouds" aria-hidden="true"/>}
     <header className="topbar">
       <button className="brand" type="button" aria-label="CloudeGift — на главную" onClick={()=>goRoot("games")}>
@@ -723,7 +727,7 @@ export default function App() {
         <CurrencyIcon/><span>{fmt(balance)}</span><Plus size={19} strokeWidth={3}/>
       </button>
     </header>
-    {page!=="profile" && ["games","cases","case-detail","free-case"].includes(page) && <div className="global-live-wrap">{liveDrops.length>0&&<LiveFeed items={liveDrops}/>}</div>}
+    {page!=="profile" && ["games","cases","case-detail","free-case","slots","upgrade","mines","crash"].includes(page) && <div className="global-live-wrap"><LiveFeed items={liveDrops}/></div>}
 
     <main className="main-content">
     <AnimatePresence mode="wait" initial={false}><motion.div key={page} className="screen-transition" initial={{opacity:0,y:reducedMotion?0:10}} animate={{opacity:1,y:0}} exit={{opacity:0,y:reducedMotion?0:-6}} transition={{duration:reducedMotion?0:.22,ease:[.22,1,.36,1]}}>
@@ -734,7 +738,7 @@ export default function App() {
       {page==="case-detail" && activeCase && <CaseDetail c={activeCase} opening={opening} roulettePrizes={roulettePrizes} rouletteFastMode={rouletteFastMode} openCount={caseOpenCount} fastMode={caseFastMode} onFastModeChange={setCaseFastMode} onCountChange={setCaseOpenCount} freeCaseRemainingMs={freeCaseRemainingMs} onOpen={(fast)=>openCase(activeCase,fast)} onRouletteComplete={finishRoulette}/>}
       {page==="shop" && <ShopScreen items={shopItems} search={search} setSearch={setSearch} sort={sort} setSort={setSort} rarity={rarityFilter} setRarity={setRarityFilter} onGift={(g)=>openGiftModal(g)} />}
       {page==="leaders" && <LeadersScreen />}
-      {page==="profile" && <ProfileScreen name={displayName} photoUrl={photoUrl} inventory={inventory} onTopup={showTopup} onWithdraw={startStarsWithdrawal} onGift={(g,uid)=>openGiftModal(g,uid)} onAdmin={()=>go("admin")} isAdmin={adminAllowed}/> }
+      {page==="profile" && <ProfileScreen name={displayName} photoUrl={photoUrl} inventory={inventory} withdrawals={withdrawals} withdrawalsState={withdrawalsState} onTopup={showTopup} onWithdraw={startStarsWithdrawal} onGift={(g,uid)=>openGiftModal(g,uid)} onAdmin={()=>go("admin")} isAdmin={adminAllowed}/> }
       {page==="upgrade" && <UpgradeScreen inventory={inventory} initialUid={upgradeInitialUid} token={token} onBack={goBack} onRemove={removeOwned} onAdd={addOwned} onToast={notify} onBusy={setUpgradeBusy}/>}
       {page==="slots" && <SlotsScreen balance={balance} setBalance={setBalance} token={token} onToast={notify} onPrize={addOwned}/>}
       {page==="mines" && <MinesScreen balance={balance} setBalance={setBalance} token={token} onToast={notify}/>}
@@ -804,7 +808,7 @@ export default function App() {
               const value=isStarPrize(prize)?starPrizeAmount(prize):(gift?.price_stars||0);
               return <div className="batch-result-item" key={`${prize.gift_id}-${index}`}>
                 <div className="batch-result-art">{isStarPrize(prize)?<PrizeVisual prize={prize}/>:gift?<GiftImage gift={gift}/>:<Package/>}</div>
-                <b>{prizeName(prize)}</b>
+                <b>{prizeName(prize,byId)}</b>
                 <StarPrice value={value}/>
               </div>;
             })}
@@ -823,9 +827,8 @@ export default function App() {
           <div className="free-case-task-list">
             <button type="button" className="free-case-task-row" onClick={shareFreeCaseWithFriends} disabled={shareSending||sharePreparing||!!freeCaseInfo?.share_complete}>
               <span className="free-case-task-icon share"><Mail size={21} fill="currentColor" strokeWidth={1.7}/></span>
-              <span className="free-case-task-copy"><b>Отправьте 3 друзьям</b><small>Поделитесь сообщением в 3 своих чатах</small></span>
-              {freeCaseTaskCheck && <span className={`free-case-task-status ${freeCaseTaskCheck.share?"ok":"bad"}`}>{freeCaseTaskCheck.share?<Check size={13}/>:<X size={13}/>}</span>}
-              {!freeCaseTaskCheck && <ChevronRight className="free-case-task-arrow" size={19}/>}
+              <span className="free-case-task-copy"><b>Отправьте 3 друзьям</b><small>{freeCaseInfo?.shares_sent??0}/3 · Telegram подтверждает каждую отправку</small></span>
+              {freeCaseInfo?.share_complete?<span className="free-case-task-status ok"><Check size={13}/></span>:<ChevronRight className="free-case-task-arrow" size={19}/>}
             </button>
             <button type="button" className="free-case-task-row" onClick={openFreeCaseChannel}>
               <span className="free-case-task-icon channel"><Bot size={21} fill="currentColor" strokeWidth={1.6}/></span>
@@ -862,7 +865,7 @@ export default function App() {
             <div className="deposit-copy-row"><span><small>Кошелёк для перевода</small><b>{gramWallet||"Пополнение пока недоступно"}</b></span><button disabled={!gramWallet} onClick={()=>copyText(gramWallet,"Адрес кошелька")}><Copy size={16}/></button></div>
             <div className="deposit-copy-row"><span><small>Уникальный комментарий (memo)</small><b>{gramMemo}</b></span><button onClick={()=>copyText(gramMemo,"Мемо-код")}><Copy size={16}/></button></div>
             <Button onClick={openGramTopup}><Wallet size={17}/> Открыть Tonkeeper</Button>
-            <p className="modal-hint">В Tonkeeper выбери токен GRAM и введи {fmt(Number(gramAmount)||0)} GRAM. Адрес и уникальный memo будут подготовлены автоматически. Зачисление выполняется после проверки транзакции.</p>
+            <p className="modal-hint">Tonkeeper откроется с подготовленными адресом, суммой и memo. Перед отправкой проверь данные. Автоматическая проверка входящего блокчейн-платежа и зачисление на баланс пока не подключены — перевод подтверждается администратором вручную.</p>
             {!gramWallet&&<p className="deposit-setup-warning">Этот способ пополнения пока не подключён. Выберите Stars или подарок.</p>}
           </div>}
           {topupMethod==="gift" && <div className="gift-deposit-flow">
@@ -898,90 +901,107 @@ export default function App() {
           <label>{withdrawType==="stars"?"TON-адрес или контакт для связи":"Telegram username получателя"}</label>
           <input className="amount-input" value={withdrawDestination} onChange={e=>setWithdrawDestination(e.target.value)} placeholder={withdrawType==="stars"?"UQ... или @username":"@username"}/>
           <Button onClick={submitWithdrawal}>Отправить заявку</Button>
-          <p className="modal-hint">Минимальные условия: 1 500 ⭐ или 2 NFT-подарка. После подачи появится запись с датой и текущим статусом. Отправка выполняется вручную после проверки; срок не гарантируется.</p><details className="withdraw-history"><summary>Мои заявки · {withdrawals.length}</summary>{withdrawals.length?withdrawals.map(w=><div className="account-withdrawal" key={w.id}><ArrowUpRight size={18}/><div className="account-withdrawal-copy"><b>{w.asset_type==="stars"?`${fmt(w.amount||0)} Stars`:w.gift_name||"NFT-подарки"}</b><time>{prettyDate(w.submitted_at)}</time></div><span className={`account-status status-${w.status}`}>{{pending:"Ожидает",processing:"В обработке",paid:"Выполнен",rejected:"Отклонён"}[w.status]||w.status}</span></div>):<p className="modal-hint">Заявок пока нет</p>}</details>
+          <p className="modal-hint">Минимальные условия: 1 500 ⭐ или 2 NFT-подарка. После подачи статус появится в профиле. Отправка выполняется вручную после проверки; срок не гарантируется.</p>
         </div>
       </Modal>}
     </AnimatePresence>
     {toast && <div className="toast" role="status" aria-live="polite">{toast}</div>}
   </div>
-  <AnimatePresence>{introVisible&&<IntroSplash onDone={()=>setIntroVisible(false)}/>}</AnimatePresence>
-  </MotionConfig>;
+  </MotionConfig></CatalogContext.Provider>;
 }
 
-function IntroSplash({onDone}:{onDone:()=>void}) {
+function IntroSplash({onDone,loop}:{onDone:()=>void;loop:boolean}) {
   const videoRef=useRef<HTMLVideoElement>(null);
+  const reduced=useReducedMotion();
+  const [showLogo,setShowLogo]=useState(false);
   useEffect(()=>{
-    try{sessionStorage.setItem("cg_intro_seen","1");}catch{}
-    if(window.matchMedia("(prefers-reduced-motion: reduce)").matches){onDone();return;}
-    const fallback=window.setTimeout(onDone,5000);
+    if(reduced){onDone();return;}
+    const timer=window.setTimeout(onDone,5500);
     const video=videoRef.current;
-    if(video){
-      const play=video.play();
-      if(play&&typeof play.catch==="function")play.catch(()=>onDone());
-    }
-    return()=>window.clearTimeout(fallback);
-  },[]);
-  return <motion.div className="intro-splash" initial={{opacity:1}} exit={{opacity:0}} transition={{duration:.38}}>
-    <video ref={videoRef} src="/assets/cloudegift-intro.mp4" autoPlay muted playsInline preload="auto"
-      onEnded={onDone} onError={onDone} onClick={onDone}/>
-    <button className="intro-skip" onClick={onDone}>Пропустить <ArrowRight size={16}/></button>
-  </motion.div>;
+    let active=true;
+    video?.play().catch(()=>{
+      if(active){setShowLogo(true);onDone();}
+    });
+    return()=>{active=false;window.clearTimeout(timer);};
+  },[onDone,reduced]);
+  return <div className="intro-splash" role="status" aria-label="Загрузка CloudeGift">
+    {reduced||showLogo
+      ? <img src="/assets/cloudegift-logo.png" alt="CloudeGift"/>
+      : <video ref={videoRef} src="/assets/cloudegift-intro.mp4" poster="/assets/cloudegift-logo.png"
+          autoPlay muted playsInline loop={loop} preload="auto" onEnded={onDone}
+          onError={()=>{setShowLogo(true);onDone();}}/>}
+  </div>;
 }
 
+function WithdrawalProgress({request:w}:{request:WithdrawalRequest}) {
+  const stage=w.status==="paid"?4:w.status==="awaiting_payout"?3:w.status==="processing"?2:w.status==="rejected"?0:1;
+  const label=["Отклонено","Ожидает подтверждения","Подтверждено","Ожидание выплаты","Выплачено"][stage];
+  return <article className="withdraw-progress-card" aria-label={`Заявка ${w.id}: ${label}`}>
+    <div className="withdraw-progress-head"><div><b>{w.asset_type==="stars"?`${fmt(w.amount||0)} Stars`: `${w.gift_count||1} NFT`}</b><small>#{w.id} · {prettyDate(w.submitted_at)}</small></div><span className={`withdraw-stage stage-${stage}`}>{label}</span></div>
+    <div className="withdraw-progress-bars" aria-hidden="true">{[1,2,3,4].map(step=><span key={step} className={stage===4&&step===4?"done finish":stage===4||step<stage?"done":step===stage?"active":""}><i/></span>)}</div>
+    <small className="withdraw-progress-detail">{stage===1?"Заявка отправлена администратору":stage===2?"Заявка проверена":stage===3?"Перевод ещё не подтверждён":stage===4?"Администратор отметил перевод выполненным":"Средства возвращены на баланс или в инвентарь"}</small>
+  </article>;
+}
+
+// Demonstration prizes are presentation-only; never submitted to the live API.
+function nextLiveExample(pool:GiftItem[],previous?:{gift?:GiftItem;stars:number;tick:number}) {
+  const choices=pool.filter(g=>g.id!==previous?.gift?.id);
+  const available=choices.length?choices:pool;
+  const gift=available.length?available[Math.floor(Math.random()*available.length)]:undefined;
+  // Uniform draw from 200 to 1500, in steps of 10; avoid consecutive repeats.
+  let step=Math.floor(Math.random()*131);
+  if(200+step*10===previous?.stars)step=(step+1)%131;
+  return {gift,stars:200+step*10,tick:(previous?.tick??0)+1};
+}
 function LiveFeed({items}:{items:any[]}) {
+  const {gifts}=React.useContext(CatalogContext);
   const prizes=items.filter((item:any)=>Number(item.star_reward)>0 || !!item.gift_image);
-  // Separate visual demo stream. It does not create wins, balance changes or API requests.
-  const makeDemoDrop=()=>{
-    const roll=Math.random();
-    if(roll<0.24){
-      const amounts=[10,25,50,80,100,250,500,1000,2500];
-      return {id:`demo-stars-${Date.now()}-${Math.random()}`,star_reward:amounts[Math.floor(Math.random()*amounts.length)]};
-    }
-    const pool=gifts.filter((gift)=>!!gift.image);
-    const gift=pool[Math.floor(Math.random()*pool.length)]||gifts[0];
-    return {id:`demo-gift-${Date.now()}-${Math.random()}`,gift_image:gift?.image||null};
-  };
-  const [demoPrizes,setDemoPrizes]=useState<any[]>(()=>Array.from({length:8},makeDemoDrop));
+  const pool=useMemo(()=>gifts.filter(g=>!!g.image&&g.image_status!=="star"&&!g.id.startsWith("stars-")),[gifts]);
+  const [example,setExample]=useState(()=>nextLiveExample(pool));
+  const reduced=useReducedMotion();
   useEffect(()=>{
-    const timer=window.setInterval(()=>setDemoPrizes(old=>[makeDemoDrop(),...old].slice(0,12)),2600);
+    setExample(previous=>nextLiveExample(pool,previous));
+    const timer=window.setInterval(()=>setExample(previous=>nextLiveExample(pool,previous)),4000);
     return()=>window.clearInterval(timer);
-  },[]);
-  const renderPrizes=(list:any[],prefix:string)=><div className="live-feed-content">
-    {list.slice(0,12).map((item:any)=>item.star_reward
-      ? <motion.div className="live-prize live-prize-stars" key={`${prefix}-${item.id}`}
-          initial={{opacity:0,x:12,scale:.9}} animate={{opacity:1,x:0,scale:1}}
-          transition={{duration:.22,ease:"easeOut"}}>
-          <CurrencyIcon/><b>{fmt(item.star_reward)}</b>
-        </motion.div>
-      : <motion.div className="live-prize live-prize-gift" key={`${prefix}-${item.id}`}
-          initial={{opacity:0,x:12,scale:.88}} animate={{opacity:1,x:0,scale:1}}
-          transition={{duration:.22,ease:"easeOut"}}>
-          <img src={`/${String(item.gift_image)}`} alt="" loading="lazy"/>
-        </motion.div>
-    )}
-  </div>;
-  return <div className="live-feed-stack" aria-label="Лента выигрышей и демонстрация призов">
-    <div className="live-feed live-feed-prizes" aria-label="LIVE — реальные выигрыши">
+  },[pool]);
+  return <div className="live-feed live-feed-prizes live-feed-rotating" aria-label="LIVE — последние выигрыши и демонстрация призов">
+    <div className="live-rail-row">
       <div className="live-feed-label"><span className="live-dot"/>LIVE</div>
-      {renderPrizes(prizes,"live")}
+      <div className="live-feed-content" aria-label="Реальные выигрыши">
+        {!prizes.length&&<span className="live-empty">Пока нет выигрышей</span>}
+        {prizes.slice(0,12).map((item:any)=>Number(item.star_reward)>0
+          ? <motion.div className="live-prize live-prize-stars" key={item.id}
+              initial={reduced?false:{opacity:0,x:12,scale:.9}} animate={{opacity:1,x:0,scale:1}}
+              transition={{duration:.22,ease:"easeOut"}}>
+              <CurrencyIcon/><b>{fmt(item.star_reward)}</b>
+            </motion.div>
+          : <motion.div className="live-prize live-prize-gift" key={item.id}
+              initial={reduced?false:{opacity:0,x:12,scale:.88}} animate={{opacity:1,x:0,scale:1}}
+              transition={{duration:.22,ease:"easeOut"}}>
+              <img src={`/${String(item.gift_image)}`} alt="NFT" loading="lazy"/>
+            </motion.div>)}
+      </div>
     </div>
-    <div className="live-feed live-feed-prizes live-feed-demo-row" aria-label="ДЕМО — демонстрационные призы">
-      <div className="live-feed-label">ДЕМО</div>
-      {renderPrizes(demoPrizes,"demo")}
+    <div className="live-rail-row live-demo-row" aria-label="Демонстрационные призы, не реальные выигрыши">
+      <div className="live-feed-label live-demo-label">ДЕМО</div>
+      <motion.div className="live-demo-content" key={example.tick}
+        initial={reduced?false:{opacity:0,y:3}} animate={{opacity:1,y:0}} transition={{duration:.2}}>
+        {example.gift&&<div className="live-prize live-prize-gift" title={example.gift.name}><img src={imageSrc(example.gift)} alt={example.gift.name}/></div>}
+        <div className="live-prize live-prize-stars"><CurrencyIcon/><b>{fmt(example.stars)}</b></div>
+      </motion.div>
+      <small className="live-demo-caption">Примеры призов</small>
     </div>
   </div>;
 }
 
 function MenuCaseIcon() {
+  const {byId}=React.useContext(CatalogContext);
   const cat=byId.get("scaredcat-1");
   const peach=byId.get("preciouspeach-1");
   return <div className="menu-case-icon" aria-hidden="true">
     {cat&&<GiftImage gift={cat} className="menu-case-gift menu-case-cat"/>}
     {peach&&<GiftImage gift={peach} className="menu-case-gift menu-case-peach"/>}
   </div>;
-}
-function MenuCrashIcon() {
-  return <div className="menu-crash-icon" aria-hidden="true"><Cloud size={62} strokeWidth={1.7}/><Plane size={34} strokeWidth={1.9}/></div>;
 }
 function GamesHome({onOpen}:{onOpen:(p:Page)=>void;onToast:(s:string)=>void}) {
   const games=[
@@ -1001,7 +1021,7 @@ function GamesHome({onOpen}:{onOpen:(p:Page)=>void;onToast:(s:string)=>void}) {
 }
 
 
-type SlotsSpinResult = { won:boolean; gift:GiftItem|null; gift_id:string|null; inventory_id:number|null; balance:number; bet:number; roll:number; win_probability:number };
+type SlotsSpinResult = { live_id?:number; won:boolean; gift:GiftItem|null; gift_id:string|null; inventory_id:number|null; balance:number; bet:number; roll:number; win_probability:number };
 
 function shuffleSlotGifts(source:GiftItem[]) {
   const result=[...source];
@@ -1012,14 +1032,15 @@ function shuffleSlotGifts(source:GiftItem[]) {
   return result;
 }
 
-function buildSlotReel(target:GiftItem, targetIndex:number) {
-  const pool=shuffleSlotGifts(gifts);
-  while(pool.length<targetIndex) pool.push(gifts[Math.floor(Math.random()*gifts.length)]);
-  pool.splice(targetIndex,0,target);
+function buildSlotReel(gifts:GiftItem[],target:GiftItem, targetIndex:number) {
+  const pool=shuffleSlotGifts(gifts).slice(0,targetIndex+2);
+  while(pool.length<targetIndex+2) pool.push(gifts[Math.floor(Math.random()*gifts.length)]);
+  pool[targetIndex]=target;
   return pool;
 }
 
-function SlotsScreen({balance,setBalance,token,onToast,onPrize}:{balance:number;setBalance:React.Dispatch<React.SetStateAction<number>>;token:string;onToast:(s:string)=>void;onPrize:(giftId:string,uid?:string)=>string}) {
+function SlotsScreen({balance,setBalance,token,onToast,onPrize}:{balance:number;setBalance:React.Dispatch<React.SetStateAction<number>>;token:string;onToast:(s:string)=>void;onPrize:(giftId:string,uid:string)=>string}) {
+  const {gifts}=React.useContext(CatalogContext);
   const [bet,setBet]=useState(25);
   const [busy,setBusy]=useState(false);
   const [spinning,setSpinning]=useState(false);
@@ -1030,23 +1051,27 @@ function SlotsScreen({balance,setBalance,token,onToast,onPrize}:{balance:number;
     gifts.slice(2,5)
   ]);
   const [result,setResult]=useState<SlotsSpinResult|null>(null);
-  const targetIndex=gifts.length+12;
+  const targetIndex=24;
   const rowHeight=76;
+  const spinLock=useRef(false);
 
   useEffect(()=>{
     if(!spinning)return;
     const timer=window.setTimeout(()=>{
+      if(result?.live_id)api("/api/live/reveal",{ids:[result.live_id]}).catch(()=>{});
       setSpinning(false);
       setBusy(false);
+      spinLock.current=false;
     },3900);
     return ()=>window.clearTimeout(timer);
   },[spinning,spinKey]);
 
   const changeBet=(delta:number)=>setBet(current=>Math.max(25,Math.min(1_000_000,balance,current+delta)));
   const spin=async()=>{
-    if(busy)return;
+    if(busy||spinLock.current)return;
     if(!token){onToast("Подключи Telegram-профиль, чтобы играть в слоты");return;}
     if(bet<25||bet>balance){onToast("Ставка минимум 25 ⭐ и не больше баланса");return;}
+    spinLock.current=true;
     setBusy(true);setResult(null);tap();
     try{
       const response=await api<SlotsSpinResult>("/api/slots/spin",{bet});
@@ -1054,31 +1079,33 @@ function SlotsScreen({balance,setBalance,token,onToast,onPrize}:{balance:number;
       let targets:GiftItem[];
       if(response.won&&response.gift){
         targets=[response.gift,response.gift,response.gift];
-        if(response.inventory_id)onPrize(response.gift.id,String(response.inventory_id));
+        if(!response.inventory_id)throw new Error("Сервер не вернул ID выигранного NFT");
+        onPrize(response.gift.id,String(response.inventory_id));
       }else{
         const shuffled=shuffleSlotGifts(gifts);
         targets=shuffled.slice(0,3);
-        if(targets.length<3)targets=[gifts[0],gifts[1],gifts[2]];
+        while(targets.length<3)targets.push(shuffled[0]);
       }
-      const nextReels=targets.map(target=>buildSlotReel(target,targetIndex));
+      const nextReels=targets.map(target=>buildSlotReel(gifts,target,targetIndex));
       setReels(nextReels);
       setSpinKey(key=>key+1);
       setResult(response);
       setSpinning(true);
     }catch(error:any){
+      spinLock.current=false;
       setBusy(false);
       onToast("Не удалось запустить слоты: "+error.message);
     }
   };
 
   return <div className="page-stack slots-page">
-    <div className="page-title slots-title"><div><h1>Слоты</h1><p>Три NFT на линии — и подарок твой</p></div><span className="slots-live-mark"><i/> LIVE</span></div>
+    <div className="page-title slots-title"><div><h1>Слоты</h1><p>Три NFT на линии — и подарок твой</p></div><span className="slots-live-mark">Шанс 10%</span></div>
     <section className="slots-machine" aria-label="Игровой автомат с тремя барабанами">
-      <div className="slots-machine-top"><span>CloudeGift <b>SLOTS</b></span></div>
+      <div className="slots-machine-top"><span>Три совпадения</span><span>Линия выигрыша</span></div>
       <div className={`slots-reels ${spinning?"is-spinning":""}`}>
         <div className="slots-win-line" aria-hidden="true"><span/><span/><span/></div>
         {reels.map((items,index)=>{
-          const offset=-(targetIndex*rowHeight-75);
+          const offset=-(targetIndex*rowHeight-76);
           return <div className="slots-reel" key={`${spinKey}-${index}`}>
             <motion.div
               className="slots-reel-track"
@@ -1119,11 +1146,29 @@ function SlotsScreen({balance,setBalance,token,onToast,onPrize}:{balance:number;
       </button>
     </section>
 
-    <div className="slots-note"><Shield size={15}/><span>Результат каждого спина определяет сервер. При победе случайный NFT из всего каталога добавляется в инвентарь.</span></div>
+    <div className="slots-note"><Shield size={15}/><span>Шанс выигрыша NFT — 10% за спин. Все NFT в пуле равновероятны при выигрыше. Ставка не возвращается при проигрыше.</span></div>
   </div>;
 }
 
 function FreeCasesScreen({onChoose}:{onChoose:(c:CaseItem)=>void}) {
+  const {gifts}=React.useContext(CatalogContext);
+  const freeCaseGifts = gifts
+    .filter(g => g.price_stars >= 800 && g.image_status !== "star")
+    .sort((a,b) => b.price_stars-a.price_stars);
+  const freeCaseStarAmounts = [2,5,10,25,50,100,250,500,700];
+  const freeCase: CaseItem = {
+    id: "free-case",
+    name: "Бесплатный кейс",
+    price_stars: 0,
+    category: "nft",
+    theme: "mythic",
+    description: "Бесплатное открытие",
+    banner: "assets/banners/free-case.png",
+    items: [
+      ...freeCaseStarAmounts.map(amount => ({gift_id:`stars-${amount}`,weight_bp:0})),
+      ...freeCaseGifts.map(g => ({gift_id:g.id,weight_bp:0}))
+    ]
+  };
   return <div className="page-stack">
     <div className="page-title"><h1>Бесплатный кейс</h1><p>Одно открытие в 24 часа после выполнения заданий</p></div>
     <div className="case-grid">
@@ -1133,12 +1178,14 @@ function FreeCasesScreen({onChoose}:{onChoose:(c:CaseItem)=>void}) {
 }
 
 function CasesScreen({onChoose}:{onChoose:(c:CaseItem)=>void}) {
+  const {cases}=React.useContext(CatalogContext);
   return <div className="page-stack">
     <div className="page-title"><h1>Кейсы</h1><p>Подарки и Stars в каждом кейсе</p></div>
     <div className="case-grid">{cases.map(c=><CaseCard key={c.id} c={c} onClick={()=>onChoose(c)}/>)}</div>
   </div>;
 }
 function CaseCard({c,onClick}:{c:CaseItem;onClick:()=>void}) {
+  const {byId}=React.useContext(CatalogContext);
   if(c.id==="free-case")return <button className="case-card free-art-card" onClick={()=>{tap();onClick();}} aria-label="Бесплатный кейс"><img src="/assets/banners/free-case.png" alt="Бесплатный кейс" loading="lazy"/></button>;
   const preview=c.items.filter(x=>!isStarPrize(x)).slice(0,3).map(x=>byId.get(x.gift_id)).filter(Boolean) as GiftItem[];
   return <button className={`case-card theme-${c.theme} ${c.id==="free-case"?"case-card-free":""} ${c.banner?"has-banner":""}`} onClick={()=>{tap();onClick();}}>
@@ -1157,6 +1204,7 @@ function CaseCard({c,onClick}:{c:CaseItem;onClick:()=>void}) {
   </button>;
 }
 function CaseDetail({c,opening,roulettePrizes,rouletteFastMode,openCount,fastMode,onFastModeChange,onCountChange,freeCaseRemainingMs,onOpen,onRouletteComplete}:{c:CaseItem;opening:boolean;roulettePrizes:CasePrize[]|null;rouletteFastMode:boolean;openCount:number;fastMode:boolean;onFastModeChange:(value:boolean)=>void;onCountChange:(count:number)=>void;freeCaseRemainingMs:number;onOpen:(fast:boolean)=>void;onRouletteComplete:()=>void}) {
+  const {byId}=React.useContext(CatalogContext);
   const prizes=c.items.map(item=>({item,gift:byId.get(item.gift_id)})).sort((a,b)=>Number(isStarPrize(a.item))-Number(isStarPrize(b.item)));
   const count=c.id==="free-case"?1:Math.max(1,Math.min(5,openCount));
   const totalCost=c.price_stars*count;
@@ -1164,14 +1212,12 @@ function CaseDetail({c,opening,roulettePrizes,rouletteFastMode,openCount,fastMod
   const countOptions=c.id==="free-case"?[1]:[1,2,3,4,5];
   return <div className="page-stack case-detail-page">
     <div className={`case-detail-hero theme-${c.theme} ${count>1?"case-detail-hero-multi":""}`} style={multiHeight?{height:multiHeight}:undefined}>
-      <div className="case-wheel-label">{roulettePrizes?(count>1?`ОТКРЫТИЕ ×${count}`:"ОТКРЫТИЕ КЕЙСА"):opening?"ПОДГОТАВЛИВАЕМ ОТКРЫТИЕ":count>1?`${c.name} · ×${count}`:c.name}</div>
+      <div className="case-wheel-label">{roulettePrizes?(count>1?`ОТКРЫТИЕ ×${count}`:"ОТКРЫТИЕ КЕЙСА"):count>1?`${c.name} · ×${count}`:c.name}</div>
       <div className="case-wheel-pointer case-wheel-pointer-top" aria-hidden="true"/>
       <div className="case-wheel-pointer case-wheel-pointer-bottom" aria-hidden="true"/>
       {roulettePrizes
         ? <CaseRoulette c={c} selected={roulettePrizes} fast={c.id==="free-case"?false:rouletteFastMode} onComplete={onRouletteComplete}/>
-        : opening
-          ? <div className="case-wheel-window case-wheel-loading"><span>Подготавливаем прокрутку…</span></div>
-          : <CaseMultiPreview c={c} count={count}/>}
+        : <div className={opening?"case-preview-pending":""}><CaseMultiPreview c={c} count={count}/></div>}
 
     </div>
     <div className="case-open-footer">
@@ -1188,13 +1234,13 @@ function CaseDetail({c,opening,roulettePrizes,rouletteFastMode,openCount,fastMod
     </div>
     <div className="section-row"><h2>Что может выпасть</h2><span className="muted">{prizes.length} призов</span></div>
     {!opening&&<div className="reel-preview-note"><span className="live-dot"/> {count>1?`Одновременно откроется ${count} кейса`:"Внутри кейса — оригинальные Telegram Gifts"}</div>}
-    {c.id!=="free-case"&&<div className="case-pity-note"><Shield size={15}/><span>Дорогой NFT гарантирован на каждом 20-м открытии этого кейса. В обычных открытиях: NFT, 100 ⭐ (5%) или 300 ⭐ (1,5%).</span></div>}
+    {c.id!=="free-case"&&<div className="case-pity-note"><Shield size={15}/><span>Дорогой NFT гарантирован на каждом 20-м открытии этого кейса. На остальных открытиях вероятности пересчитываются среди доступных обычных призов.</span></div>}
     <div className="prize-carousel">
       {prizes.map(({item,gift})=>{
         const value=isStarPrize(item)?starPrizeAmount(item):(gift?.price_stars||0);
         return <div className={`prize-tile ${isStarPrize(item)?"prize-tile-stars":""}`} key={item.gift_id}>
           <PrizeVisual prize={item}/>
-          <b>{prizeName(item)}</b>
+          <b>{prizeName(item,byId)}</b>
           <StarPrice value={value}/>
           <span className={`rarity ${isStarPrize(item)?starTier(starPrizeAmount(item)):rarityClass(gift?.rarity||"Обычный")}`}>{isStarPrize(item)?"Звёзды":gift?.rarity||"Подарок"}</span>
         </div>;
@@ -1204,6 +1250,7 @@ function CaseDetail({c,opening,roulettePrizes,rouletteFastMode,openCount,fastMod
 }
 
 function ShopScreen({items,search,setSearch,sort,setSort,rarity,setRarity,onGift}:{items:GiftItem[];search:string;setSearch:(v:string)=>void;sort:"asc"|"desc";setSort:(v:"asc"|"desc")=>void;rarity:string;setRarity:(v:string)=>void;onGift:(g:GiftItem)=>void}) {
+  const {gifts}=React.useContext(CatalogContext);
   const rarities=["Все","Обычный","Необычный","Редкий","Эпический","Легендарный","Мифический"];
   return <div className="shop-page">
     <div className="page-title centered"><h1>Магазин подарков</h1><p>Подарки для вашей коллекции</p></div>
@@ -1219,211 +1266,23 @@ function ShopScreen({items,search,setSearch,sort,setSort,rarity,setRarity,onGift
   </div>;
 }
 
-type DemoLeader = {
-  id: string;
-  name: string;
-  amount: number;
-  avatarUrl: string;
-  gift: GiftItem;
-};
-
-// Локальные Pinterest-style аватары из референсов пользователя: аниме, животные и предметы.
-// В наборе нет фотографий реальных лиц и внешних URL.
-const demoLeaderAvatars = [
-  "/assets/leader-avatars/anime-back.webp",
-  "/assets/leader-avatars/anime-closeup-clean.webp",
-  "/assets/leader-avatars/anime-red-white.webp",
-  "/assets/leader-avatars/anime-side-grey.webp",
-  "/assets/leader-avatars/anime-sketch.webp",
-  "/assets/leader-avatars/anime-uniform.webp",
-  "/assets/leader-avatars/bear-doodle.webp",
-  "/assets/leader-avatars/black-anime.webp",
-  "/assets/leader-avatars/blue-bird.webp",
-  "/assets/leader-avatars/cream-puppy.webp",
-  "/assets/leader-avatars/dark-anime.webp",
-  "/assets/leader-avatars/night-car.webp",
-  "/assets/leader-avatars/plush-bear.webp",
-  "/assets/leader-avatars/puppy-carrot-close.webp",
-  "/assets/leader-avatars/puppy-teddy.webp",
-  "/assets/leader-avatars/red-anime-clean.webp",
-  "/assets/leader-avatars/sakura-night.webp",
-  "/assets/leader-avatars/skull-graphic.webp",
-  "/assets/leader-avatars/sleepy-puppy.webp",
-  "/assets/leader-avatars/two-kittens.webp",
-  "/assets/leader-avatars/vampire-print.webp",
-  "/assets/leader-avatars/white-puppy.webp",
-  "/assets/leader-avatars/winged-bear.webp"
-];
-
-// Ники взяты из присланных пользователем скриншотов списка Telegram-пользователей.
-// Состав перемешивается по расписанию демо-сезона; это не реальные данные рейтинга.
-const demoLeaderNicknames = [
-  "Darini’s", "pazl 🐼", "#Финансовый mercy ★", "кесарев", "данил панамеренко 🥲",
-  "✌🏻✌🏻", "никулька", "#freemissed", "Zerokxq", "бивв печени", "flower", "#пафаси 🌙",
-  "Ванек", "#usertye 🔹", "geroinov | #благословенный", "h🍭", "туалетный потрошитель",
-  "коля", "Аполлон в руках нож", "Настя", "#John R 🦇", "Ewer ★", "t3!", "Nika1’s",
-  "so many Rkits", "novelleirz", "Kimi Antonelli", "#westyrik / вестурик", "Mk =TOXIC",
-  "BRACHO_LOVAKA", "Selber NFT", "'ryrx/zxcyk'", "qq", "Qw0nky😎", "лириков @llrlkov | 2%",
-  "Lean 🐣", "курсаев", "VR Miller #898", "Verkhovniy | kaz1mir", "centaur", "Elena Brooks ❀ XD",
-  "Vilon", "Эвелинка", "алинкааа❤️", "Yeasz", "Фригидный 🧊", "GHOST", "МАКСИМКААА",
-  "Aeron", "Stretten", "ucigo ★", "#T", "TVOI_BRACHO", "Cvv", "Y", "поля", "Троянский",
-  "босс", "glarad #3", "prince", "#SAGEX", "dime", "0D", "SON1K", "хайпожор", "Gift Relayer",
-  "Данило", "nastenka", "TNZ1SPY", "Фartyк", "diya", "Neon1s", "Sor.Mr", "кровь",
-  "#Wormzix | Enthusiast", "кроль", "#ravezzz", "лиззка", "GUALA • MM", "excellent",
-  "Юлия Пиратинская", "@tsartixc", "nowting", "Freegit #mefov", "Arthas Menethil", "Reflex",
-  "Богатый школьник", "kasprit#rdc", "Tonwieerov", "Ромчик Ромчик", "phantom🃏",
-  "пидиди #freemissed", "dannyok", "@aujuX ^^", "стич scup", "Хейси", "холс будаев", "Вадим",
-  "NFT BUYER not.exe", "MYA 🐻"
-];
-
-const demoExpensiveGifts = [...gifts]
-  .filter(g => g.image)
-  .sort((a,b) => b.price_stars-a.price_stars)
-  .slice(0,18);
-
-const DEMO_SEASON_ANCHOR = new Date(2026,10,23,0,0,0,0);
-const DEMO_DAY_MS = 24*60*60*1000;
-const DEMO_WEEK_MS = 7*DEMO_DAY_MS;
-const DEMO_SEASON_MS = 14*DEMO_DAY_MS;
-
-function makeSeededRandom(seed:number) {
-  let state = seed >>> 0;
-  return () => {
-    state += 0x6D2B79F5;
-    let t = state;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-function seededShuffle<T,>(items:T[], random:()=>number) {
-  const result = [...items];
-  for(let i=result.length-1;i>0;i--) {
-    const j=Math.floor(random()*(i+1));
-    [result[i],result[j]]=[result[j],result[i]];
-  }
-  return result;
-}
-
-function getDemoLeaderboard(now:Date) {
-  const today = new Date(now.getFullYear(),now.getMonth(),now.getDate());
-  const daysFromAnchor = Math.floor((today.getTime()-DEMO_SEASON_ANCHOR.getTime())/DEMO_DAY_MS);
-  const seasonIndex = Math.floor(daysFromAnchor/14);
-  const seasonStart = new Date(DEMO_SEASON_ANCHOR.getTime()+seasonIndex*DEMO_SEASON_MS);
-  const seasonDay = Math.max(0,Math.floor((today.getTime()-seasonStart.getTime())/DEMO_DAY_MS));
-  const nextReset = new Date(seasonStart.getTime()+DEMO_SEASON_MS);
-
-  // Demo roster rotates on Monday, Wednesday and Friday (three rotations per week).
-  const monday = new Date(today);
-  const weekday = (monday.getDay()+6)%7;
-  monday.setDate(monday.getDate()-weekday);
-  const weekIndex = Math.floor((monday.getTime()-DEMO_SEASON_ANCHOR.getTime())/DEMO_WEEK_MS);
-  const rotationSlot = weekday<2?0:weekday<4?1:2;
-  const rotationIndex = weekIndex*3+rotationSlot;
-
-  const random = makeSeededRandom((seasonIndex+100)*10007+rotationIndex*313+71);
-  const nicknames = seededShuffle(demoLeaderNicknames,random);
-  const avatars = seededShuffle(demoLeaderAvatars,random);
-  const prizes = seededShuffle(demoExpensiveGifts,random);
-
-  // Сумма каждого участника растёт ежедневно, а ники/аватары/подарки меняются
-  // вместе с ротацией состава по понедельникам, средам и пятницам.
-  const leaders:DemoLeader[] = nicknames.map((name,index)=>{
-    const base = 18000+Math.floor(random()*265000);
-    const dailyGrowth = 900+Math.floor(random()*14500);
-    return {
-      id:`${rotationIndex}-${index}`,
-      name,
-      amount:base+seasonDay*dailyGrowth,
-      avatarUrl:avatars[index%avatars.length],
-      gift:prizes[index%prizes.length]
-    };
-  }).sort((a,b)=>b.amount-a.amount);
-
-  return {leaders,seasonDay,nextReset,rotationIndex};
-}
-
 function LeadersScreen() {
-  const [now,setNow]=useState(()=>new Date());
-  useEffect(()=>{
-    const timer=window.setInterval(()=>setNow(new Date()),1000);
-    return ()=>window.clearInterval(timer);
-  },[]);
-
-  const board=useMemo(()=>getDemoLeaderboard(now),[now]);
-  const remaining=Math.max(0,board.nextReset.getTime()-now.getTime());
-  const days=Math.floor(remaining/DEMO_DAY_MS);
-  const hours=Math.floor((remaining%DEMO_DAY_MS)/3600000);
-  const minutes=Math.floor((remaining%3600000)/60000);
-  const seconds=Math.floor((remaining%60000)/1000);
-  const featured=demoExpensiveGifts.slice(0,5);
-  const bonus=demoExpensiveGifts.slice(5,8);
   return <div className="page-stack leaderboard-screen">
     <section className="leader-hero">
-      <div className="leader-hero-gifts">
-        {featured.map(g=><div className="leader-hero-gift" key={g.id}><GiftImage gift={g}/></div>)}
-      </div>
+      <div className="leader-empty-icon"><Trophy size={34}/></div>
       <h1>Лидеры</h1>
-      <p>Рейтинг сезона · обновление каждые две недели</p>
-      <div className="leader-countdown">
-        <div><b>{days}</b><span>дни</span></div>
-        <div><b>{String(hours).padStart(2,"0")}</b><span>часы</span></div>
-        <div><b>{String(minutes).padStart(2,"0")}</b><span>минуты</span></div>
-        <div><b>{String(seconds).padStart(2,"0")}</b><span>секунды</span></div>
-      </div>
-      <div className="leader-demo-label"><span className="leader-demo-dot"/> Демонстрационный рейтинг</div>
+      <p>Здесь появится рейтинг по подтверждённой игровой статистике.</p>
     </section>
-
-    <section className="leader-bonus">
-      <h2>Дополнительные призы</h2>
-      <p>Примеры призов для участников топ-100</p>
-      <div className="leader-bonus-grid">
-        {bonus.map((g,i)=><div className="leader-bonus-item" key={g.id}>
-          <div className="leader-bonus-image"><GiftImage gift={g}/></div>
-          <b>{[5,10,35][i]}</b>
-          <span>{g.name}</span>
-        </div>)}
-      </div>
-    </section>
-
-    <section className="leader-you">
-      <div className="leader-you-rank">—</div>
-      <div className="leader-avatar leader-you-avatar">
-        <img src="/assets/leader-avatars/blue-bird.webp" alt=""/>
-      </div>
-      <div className="leader-usercopy">
-        <b>Вы</b>
-        <small>Личная позиция в деморейтинге недоступна</small>
-      </div>
-      <span className="leader-you-value">—</span>
-    </section>
-
-    <div className="leader-list-heading"><b>Таблица лидеров</b><span>100 участников · демо</span></div>
-    <section className="leader-list">
-      {board.leaders.map((u,i)=><div className="leader-row" key={u.id}>
-        <span className="leader-rank">{i+1}</span>
-        <div className="leader-avatar">
-          <img src={u.avatarUrl} alt="" loading="lazy"/>
-        </div>
-        <div className="leader-usercopy">
-          <b title={u.name}>{u.name}</b>
-          <strong><CurrencyIcon/> {fmt(u.amount)}</strong>
-        </div>
-        <div className="leader-won-gift" title={`Демо-приз: ${u.gift.name}`} aria-label={`Выигранный подарок: ${u.gift.name}`}>
-          <GiftImage gift={u.gift}/>
-          <small>{u.gift.name}</small>
-        </div>
-      </div>)}
-    </section>
-
-    <div className="leader-demo-disclaimer">
-      Участники, суммы и призы в этом рейтинге — демонстрационные.
+    <div className="leader-empty-state">
+      <Trophy size={25}/>
+      <b>Пока нет данных рейтинга</b>
+      <span>В таблицу попадут только реальные участники и результаты из базы приложения.</span>
     </div>
   </div>;
 }
 
-function ProfileScreen({name,photoUrl,inventory,onTopup,onWithdraw,onGift,onAdmin,isAdmin}:{name:string;photoUrl:string;inventory:OwnedGift[];onTopup:()=>void;onWithdraw:()=>void;onGift:(gift:GiftItem,uid:string)=>void;onAdmin:()=>void;isAdmin:boolean}) {
+function ProfileScreen({name,photoUrl,inventory,withdrawals,withdrawalsState,onTopup,onWithdraw,onGift,onAdmin,isAdmin}:{name:string;photoUrl:string;inventory:OwnedGift[];withdrawals:WithdrawalRequest[];withdrawalsState:"loading"|"ready"|"error";onTopup:()=>void;onWithdraw:()=>void;onGift:(gift:GiftItem,uid:string)=>void;onAdmin:()=>void;isAdmin:boolean}) {
+  const {byId}=React.useContext(CatalogContext);
   const [photoFailed,setPhotoFailed]=useState(false);
   useEffect(()=>setPhotoFailed(false),[photoUrl]);
   const initials=name.trim().split(/\s+/).slice(0,2).map(part=>part[0]).join("").toUpperCase();
@@ -1436,11 +1295,17 @@ function ProfileScreen({name,photoUrl,inventory,onTopup,onWithdraw,onGift,onAdmi
     <section className={`reference-inventory ${inventory.length?"has-gifts":""}`} aria-label="Инвентарь">
       {inventory.length?<div className="reference-inventory-grid">{inventory.map(item=>{const gift=byId.get(item.giftId);return gift?<motion.button key={item.uid} className="reference-inventory-item" whileTap={{scale:.96}} onClick={()=>onGift(gift,item.uid)} aria-label={`${gift.name}, ${fmt(gift.price_stars)} звёзд`}><GiftImage gift={gift}/><b>{gift.name}</b><StarPrice value={gift.price_stars}/></motion.button>:null;})}</div>:<span className="reference-inventory-empty">Инвентарь пуст</span>}
     </section>
+    <section className="profile-withdrawals" aria-labelledby="profile-withdrawals-heading">
+      <div className="profile-withdrawals-heading"><h2 id="profile-withdrawals-heading">Заявки на выплату</h2><span>{withdrawals.length}</span></div>
+      {withdrawalsState==="error"&&<p className="profile-withdrawals-note" role="status">Не удалось обновить статусы. Повторяем запрос.</p>}
+      {withdrawals.length ? <div className="profile-withdrawals-list">{withdrawals.map(w=><WithdrawalProgress key={w.id} request={w}/>)}</div> : withdrawalsState!=="error"&&<p className="profile-withdrawals-note">{withdrawalsState==="loading"?"Загрузка заявок…":"Заявок пока нет"}</p>}
+    </section>
     {isAdmin&&<button className="text-action profile-admin" onClick={onAdmin}><Settings size={14}/>Админ-панель</button>}
   </div>;
 }
 
-function UpgradeScreen({inventory,initialUid,token,onBack,onRemove,onAdd,onToast,onBusy}:{inventory:OwnedGift[];initialUid:string;token:string;onBack:()=>void;onRemove:(uid:string)=>void;onAdd:(id:string,uid?:string)=>void;onToast:(s:string)=>void;onBusy:(busy:boolean)=>void}) {
+function UpgradeScreen({inventory,initialUid,token,onBack,onRemove,onAdd,onToast,onBusy}:{inventory:OwnedGift[];initialUid:string;token:string;onBack:()=>void;onRemove:(uid:string)=>void;onAdd:(id:string,uid:string)=>void;onToast:(s:string)=>void;onBusy:(busy:boolean)=>void}) {
+  const {gifts,byId}=React.useContext(CatalogContext);
   const [sourceUid,setSourceUid]=useState(initialUid||inventory[0]?.uid||"");
   const [targetId,setTargetId]=useState("");
   const [picker,setPicker]=useState<"source"|"target"|null>(null);
@@ -1471,25 +1336,25 @@ function UpgradeScreen({inventory,initialUid,token,onBack,onRemove,onAdd,onToast
       let success:boolean;
       let finalChance=chance;
       let newInventoryId:string|undefined;
-      if(token) {
-        const result:any=await api("/api/upgrades",{inventory_id:Number(source.uid),target_gift_id:target.id});
-        success=!!result.success;
-        finalChance=result.chance;
-        newInventoryId=result.inventory_id?String(result.inventory_id):undefined;
-      } else {
-        const roll=crypto.getRandomValues(new Uint32Array(1))[0]%10000;
-        success=roll<Math.round(chance*100);
-      }
+      if(!token || !/^\d+$/.test(source.uid))throw new Error("Нет подтверждённой серверной сессии или предмета в инвентаре");
+      const result:any=await api("/api/upgrades",{inventory_id:Number(source.uid),target_gift_id:target.id});
+      success=!!result.success;
+      finalChance=result.chance;
+      newInventoryId=result.inventory_id?String(result.inventory_id):undefined;
       setDisplayChance(finalChance);
       const greenDegrees=Math.max(0,Math.min(360,finalChance*3.6));
       const stopDegrees=success?greenDegrees/2:greenDegrees+(360-greenDegrees)/2;
       const complete=new Promise<void>(resolve=>{animationDone.current=resolve;});
       setWheelRotation(current=>current+360*6+((stopDegrees-(current%360)+360)%360));
-      await complete;
+      await Promise.race([complete,new Promise<void>(resolve=>window.setTimeout(resolve,reduced?100:4700))]);
+      if(result.live_id)api("/api/live/reveal",{ids:[result.live_id]}).catch(()=>{});
       setSettled(success?"success":"failure");
       await new Promise(resolve=>window.setTimeout(resolve,reduced?0:420));
       onRemove(source.uid);
-      if(success)onAdd(target.id,newInventoryId);
+      if(success){
+        if(!newInventoryId)throw new Error("Сервер не вернул ID улучшенного подарка");
+        onAdd(target.id,newInventoryId);
+      }
       setOutcome({success,source:sourceGift,target,chance:finalChance});
       tap();
     } catch(e:any) {
@@ -1710,7 +1575,6 @@ function CrashScreen({balance,setBalance,token,onToast}:{balance:number;setBalan
         {myBet.status==="cashed"?`Ты забрал x${Number(myBet.cashout_multiplier||1).toFixed(2)}`:myBet.status==="lost"?"Ты не успел забрать ставку":"Твоя ставка участвует в раунде"}
       </div>}
     </div>
-    {!token&&<div className="demo-disclaimer">Список участников и ставки появятся после подключения Telegram-профиля и Backend.</div>}
     <AnimatePresence>
       {betModalOpen&&<Modal onClose={()=>setBetModalOpen(false)}>
         <div className="crash-bet-modal">
@@ -1736,6 +1600,8 @@ function MinesScreen({balance,setBalance,token,onToast}:{balance:number;setBalan
   const [opened,setOpened]=useState<number[]>([]);
   const [lost,setLost]=useState(false);
   const [multiplier,setMultiplier]=useState(1);
+  const mineRequest=useRef(false);
+  const [mineBusy,setMineBusy]=useState(false);
   useEffect(()=>{
     if(!token)return;
     api<any>("/api/mines/active").then(({game})=>{
@@ -1748,23 +1614,20 @@ function MinesScreen({balance,setBalance,token,onToast}:{balance:number;setBalan
   },[token]);
   const safe=opened.length;
   const start=async()=>{
+    if(!token){onToast("Нет подтверждённой серверной сессии");return;}
     if(bet<25||bet>balance){onToast("Ставка минимум 25 ⭐ и не больше баланса");return;}
-    if(token){
-      try{
-        const res:any=await api("/api/mines/start",{bet,grid_size:size,mine_count:mineCount});
-        setGameId(res.game_id);setBalance(res.balance);setMineSet([]);setOpened([]);
-        setMultiplier(1);setLost(false);setStarted(true);tap();
-      }catch(e:any){onToast("Не удалось начать игру: "+e.message);}
-      return;
-    }
-    setBalance(v=>v-bet);
-    const total=size*size,arr=new Set<number>();
-    while(arr.size<mineCount)arr.add(Math.floor(Math.random()*total));
-    setMineSet([...arr]);setOpened([]);setMultiplier(1);setLost(false);setStarted(true);tap();
+    if(mineRequest.current)return;
+    mineRequest.current=true;setMineBusy(true);
+    try{
+      const res:any=await api("/api/mines/start",{bet,grid_size:size,mine_count:mineCount});
+      setGameId(res.game_id);setBalance(res.balance);setMineSet([]);setOpened([]);
+      setMultiplier(1);setLost(false);setStarted(true);tap();
+    }catch(e:any){onToast("Не удалось начать игру: "+e.message);}finally{mineRequest.current=false;setMineBusy(false);}
   };
   const reveal=async(i:number)=>{
-    if(!started||opened.includes(i)||lost)return;
+    if(!started||opened.includes(i)||lost||mineRequest.current)return;
     if(token&&gameId){
+      mineRequest.current=true;setMineBusy(true);
       try{
         const res:any=await api(`/api/mines/${gameId}/reveal`,{cell_index:i});
         if(res.hit_mine){
@@ -1773,29 +1636,29 @@ function MinesScreen({balance,setBalance,token,onToast}:{balance:number;setBalan
         } else {
           setOpened(res.opened||[]);setMultiplier(res.multiplier||1);tap();
         }
-      }catch(e:any){onToast("Не удалось открыть клетку: "+e.message);}
+      }catch(e:any){onToast("Не удалось открыть клетку: "+e.message);}finally{mineRequest.current=false;setMineBusy(false);}
       return;
     }
-    if(mineSet.includes(i)){setLost(true);setStarted(false);onToast("Попалась мина! Ставка потеряна.");}
-    else {setOpened(v=>[...v,i]);setMultiplier(Number((1+ (opened.length+1)*mineCount/(size*size-mineCount)*0.82).toFixed(2)));tap();}
+    onToast("Активная игра не найдена на сервере");
   };
   const cashout=async()=>{
-    if(!started||!opened.length)return;
+    if(!started||!opened.length||mineRequest.current)return;
     if(token&&gameId){
+      mineRequest.current=true;setMineBusy(true);
       try{
         const res:any=await api(`/api/mines/${gameId}/cashout`,{});
         setBalance(res.balance);setStarted(false);setGameId(null);
         onToast(`Забрал ${fmt(res.payout)} ⭐ · x${Number(res.multiplier).toFixed(2)}`);tap();
-      }catch(e:any){onToast("Не удалось забрать выигрыш: "+e.message);}
+      }catch(e:any){onToast("Не удалось забрать выигрыш: "+e.message);}finally{mineRequest.current=false;setMineBusy(false);}
       return;
     }
-    const reward=Math.floor(bet*multiplier);setBalance(v=>v+reward);setStarted(false);onToast(`Забрал ${fmt(reward)} ⭐`);tap();
+    onToast("Активная игра не найдена на сервере");
   };
   const reset=()=>{setStarted(false);setGameId(null);setOpened([]);setMineSet([]);setLost(false);setMultiplier(1);};
   return <div className="page-stack">
     <div className="page-title"><h1>Мины</h1><p>Открывай безопасные клетки и увеличивай множитель</p></div>
     <div className="mines-board" style={{gridTemplateColumns:`repeat(${size},1fr)`}}>
-      {Array.from({length:size*size},(_,i)=><motion.button whileTap={{scale:.94}} key={i} className={`mine-cell ${opened.includes(i)?"safe":""} ${lost&&mineSet.includes(i)?"mine":""}`} onClick={()=>reveal(i)} disabled={!started||opened.includes(i)||lost}>
+      {Array.from({length:size*size},(_,i)=><motion.button whileTap={{scale:.94}} key={i} className={`mine-cell ${opened.includes(i)?"safe":""} ${lost&&mineSet.includes(i)?"mine":""}`} onClick={()=>reveal(i)} disabled={!started||opened.includes(i)||lost||mineBusy}>
         {opened.includes(i)?<Gift size={20}/>:lost&&mineSet.includes(i)?<Bomb size={21}/>:<span>?</span>}
       </motion.button>)}
     </div>
@@ -1806,13 +1669,14 @@ function MinesScreen({balance,setBalance,token,onToast}:{balance:number;setBalan
       <div className="control-row"><label>Ставка</label><strong>{bet} ⭐</strong></div>
       <input className="amount-input" type="number" min="25" value={bet} disabled={started} onChange={e=>setBet(Number(e.target.value))}/>
       <div className="mines-stats"><span>Безопасно: <b>{safe}</b></span><span>Множитель: <b>x{multiplier}</b></span></div>
-      {!started?<Button onClick={lost?reset:start}>{lost?"Новая игра":"Начать игру"}</Button>:<Button onClick={cashout} disabled={!opened.length}>Забрать {fmt(bet*multiplier)} ⭐</Button>}
+      {!started?<Button disabled={mineBusy} onClick={lost?reset:start}>{lost?"Новая игра":"Начать игру"}</Button>:<Button onClick={cashout} disabled={!opened.length||mineBusy}>Забрать {fmt(bet*multiplier)} ⭐</Button>}
     </div>
-    <div className="demo-disclaimer">Минимум 4 мины. Чем больше мин и открытых безопасных клеток, тем выше множитель. Результат проверяется сервером.</div>
+    <div className="info-note">Шанс безопасной следующей клетки: {((size*size-mineCount-safe)/Math.max(1,size*size-safe)*100).toFixed(1)}%. Мины размещаются случайно в начале игры. При попадании на мину ставка теряется.</div>
   </div>;
 }
 
 function AdminScreen({onBack,token,onToast,ownId,onRefresh}:{onBack:()=>void;token:string;onToast:(s:string)=>void;ownId:string|number;onRefresh:()=>Promise<void>}) {
+  const {gifts}=React.useContext(CatalogContext);
   const [tgId,setTgId]=useState("");
   const [adminBusy,setAdminBusy]=useState(false);
   const [amount,setAmount]=useState("1000");
@@ -1872,9 +1736,9 @@ function AdminScreen({onBack,token,onToast,ownId,onRefresh}:{onBack:()=>void;tok
       {withdrawals.map(w=><div className="admin-withdrawal" key={w.id}>
         <div><b>#{w.id} · {w.username?"@"+w.username:w.first_name||w.tg_id}</b><small>{w.asset_type==="stars"?`${fmt(w.amount||0)} ⭐`:(w.gift_name||"NFT-подарок")} · {prettyDate(w.submitted_at)}</small><small>Получатель: {w.destination}</small><small>Статус: {w.status}</small></div>
         <div className="admin-withdrawal-actions">
-          <button onClick={()=>updateWithdrawal(w.id,"processing")}>В работу</button>
-          <button onClick={()=>updateWithdrawal(w.id,"paid")}>Выполнено вручную</button>
-          <button onClick={()=>updateWithdrawal(w.id,"rejected")}>Отклонить</button>
+          <button disabled={w.status!=="pending"} onClick={()=>updateWithdrawal(w.id,"processing")}>Подтвердить</button>
+          <button disabled={w.status!=="processing"} onClick={()=>{if(window.confirm("Подтвердить, что перевод уже выполнен вручную?"))updateWithdrawal(w.id,"paid");}}>Выплачено</button>
+          <button disabled={w.status==="paid"||w.status==="rejected"} onClick={()=>updateWithdrawal(w.id,"rejected")}>Отклонить</button>
         </div>
       </div>)}
       {!withdrawals.length&&<span className="muted">Нажми обновить, чтобы загрузить заявки.</span>}
@@ -1888,6 +1752,6 @@ function AdminScreen({onBack,token,onToast,ownId,onRefresh}:{onBack:()=>void;tok
       <label>Причина / комментарий</label><input value={reason} onChange={e=>setReason(e.target.value)} placeholder="Служебная заметка"/>
       <Button onClick={doAction} disabled={adminBusy}>{adminBusy?"Выполняем…":"Выполнить действие"}</Button>
     </div>
-    <div className="demo-disclaimer">Все административные операции записываются в журнал. Не выдавай доступ по username — только по Telegram ID.</div>
+    <div className="info-note">Все административные операции записываются в журнал. Не выдавай доступ по username — только по Telegram ID.</div>
   </div>;
 }
