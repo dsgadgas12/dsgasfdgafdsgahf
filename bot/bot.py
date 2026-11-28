@@ -16,10 +16,8 @@ if not TOKEN:
 
 # Импортируем ту же функцию, которой пользуется API, чтобы начисления были идемпотентными.
 import sys
-PROJECT_ROOT=os.path.abspath(os.path.join(os.path.dirname(__file__),".."))
-if PROJECT_ROOT not in sys.path:
-    sys.path.insert(0,PROJECT_ROOT)
-from backend.main import add_stars_from_payment, init_db
+sys.path.insert(0,os.path.abspath(os.path.join(os.path.dirname(__file__),"..","backend")))
+from main import add_stars_from_payment, init_db
 
 bot=Bot(TOKEN,default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 dp=Dispatcher()

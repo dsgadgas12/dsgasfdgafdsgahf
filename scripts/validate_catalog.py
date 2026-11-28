@@ -2,8 +2,8 @@ import json
 from pathlib import Path
 
 ROOT=Path(__file__).resolve().parents[1]
-gifts=json.loads((ROOT/"backend/catalog/gifts.json").read_text(encoding="utf-8"))
-cases=json.loads((ROOT/"backend/catalog/cases.json").read_text(encoding="utf-8"))
+gifts=json.loads((ROOT/"frontend/src/data/gifts.json").read_text(encoding="utf-8"))
+cases=json.loads((ROOT/"frontend/src/data/cases.json").read_text(encoding="utf-8"))
 missing=[]
 for gift in gifts:
     image=gift.get("image")
