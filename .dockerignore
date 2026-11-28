@@ -1,0 +1,16 @@
+.git
+.git/**
+**/node_modules
+**/__pycache__
+**/*.pyc
+.env
+.env.*
+!env_example
+!*.example
+.venv
+.pytest_cache
+.mypy_cache
+*.sqlite
+*.sqlite3
+*.db
+*.log
