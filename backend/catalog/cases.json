@@ -1,0 +1,832 @@
+[
+  {
+    "id": "oblachny",
+    "name": "Облачный",
+    "price_stars": 750,
+    "category": "stars",
+    "theme": "cloud",
+    "description": "Коллекция оригинальных Telegram Gifts",
+    "items": [
+      {
+        "gift_id": "astralshard-1",
+        "weight_bp": 209
+      },
+      {
+        "gift_id": "genielamp-1",
+        "weight_bp": 209
+      },
+      {
+        "gift_id": "iongem-1",
+        "weight_bp": 168
+      },
+      {
+        "gift_id": "crystalball-1",
+        "weight_bp": 414
+      },
+      {
+        "gift_id": "eternalcandle-1",
+        "weight_bp": 87
+      },
+      {
+        "gift_id": "faithamulet-1",
+        "weight_bp": 219
+      },
+      {
+        "gift_id": "hangingstar-1",
+        "weight_bp": 530
+      },
+      {
+        "gift_id": "hexpot-1",
+        "weight_bp": 528
+      },
+      {
+        "gift_id": "evileye-1",
+        "weight_bp": 882
+      },
+      {
+        "gift_id": "timelessbook-1",
+        "weight_bp": 882
+      },
+      {
+        "gift_id": "moonpendant-1",
+        "weight_bp": 882
+      },
+      {
+        "gift_id": "moneypot-1",
+        "weight_bp": 882
+      },
+      {
+        "gift_id": "starnotepad-1",
+        "weight_bp": 882
+      },
+      {
+        "gift_id": "tophat-1",
+        "weight_bp": 881
+      },
+      {
+        "gift_id": "stellarrocket-1",
+        "weight_bp": 881
+      },
+      {
+        "gift_id": "bdaycandle-1",
+        "weight_bp": 879
+      },
+      {
+        "gift_id": "stars-100",
+        "weight_bp": 450
+      },
+      {
+        "gift_id": "stars-300",
+        "weight_bp": 135
+      }
+    ],
+    "banner": "assets/cases/cloud.webp"
+  },
+  {
+    "id": "zimniy",
+    "name": "Зимний",
+    "price_stars": 500,
+    "category": "stars",
+    "theme": "winter",
+    "description": "Коллекция оригинальных Telegram Gifts",
+    "items": [
+      {
+        "gift_id": "snowglobe-1",
+        "weight_bp": 40
+      },
+      {
+        "gift_id": "santahat-1",
+        "weight_bp": 47
+      },
+      {
+        "gift_id": "jinglebells-1",
+        "weight_bp": 157
+      },
+      {
+        "gift_id": "sleighbell-1",
+        "weight_bp": 189
+      },
+      {
+        "gift_id": "snowmittens-1",
+        "weight_bp": 284
+      },
+      {
+        "gift_id": "bunnymuffin-1",
+        "weight_bp": 283
+      },
+      {
+        "gift_id": "winterwreath-1",
+        "weight_bp": 153
+      },
+      {
+        "gift_id": "moussecake-1",
+        "weight_bp": 181
+      },
+      {
+        "gift_id": "gingercookie-1",
+        "weight_bp": 603
+      },
+      {
+        "gift_id": "spicedwine-1",
+        "weight_bp": 723
+      },
+      {
+        "gift_id": "holidaydrink-1",
+        "weight_bp": 1084
+      },
+      {
+        "gift_id": "candycane-1",
+        "weight_bp": 1207
+      },
+      {
+        "gift_id": "freshsocks-1",
+        "weight_bp": 1206
+      },
+      {
+        "gift_id": "icecream-1",
+        "weight_bp": 1087
+      },
+      {
+        "gift_id": "homemadecake-1",
+        "weight_bp": 1084
+      },
+      {
+        "gift_id": "xmasstocking-1",
+        "weight_bp": 1087
+      },
+      {
+        "gift_id": "stars-100",
+        "weight_bp": 450
+      },
+      {
+        "gift_id": "stars-300",
+        "weight_bp": 135
+      }
+    ],
+    "banner": "assets/cases/winter.webp"
+  },
+  {
+    "id": "helloween",
+    "name": "Хэллоуин",
+    "price_stars": 1500,
+    "category": "stars",
+    "theme": "halloween",
+    "description": "Коллекция оригинальных Telegram Gifts",
+    "items": [
+      {
+        "gift_id": "scaredcat-1",
+        "weight_bp": 220
+      },
+      {
+        "gift_id": "khabibspapakha-1",
+        "weight_bp": 219
+      },
+      {
+        "gift_id": "electricskull-1",
+        "weight_bp": 219
+      },
+      {
+        "gift_id": "voodoodoll-1",
+        "weight_bp": 342
+      },
+      {
+        "gift_id": "ufcstrike-1",
+        "weight_bp": 111
+      },
+      {
+        "gift_id": "restlessjar-1",
+        "weight_bp": 172
+      },
+      {
+        "gift_id": "madpumpkin-1",
+        "weight_bp": 520
+      },
+      {
+        "gift_id": "skullflower-1",
+        "weight_bp": 517
+      },
+      {
+        "gift_id": "witchhat-1",
+        "weight_bp": 779
+      },
+      {
+        "gift_id": "jesterhat-1",
+        "weight_bp": 779
+      },
+      {
+        "gift_id": "flyingbroom-1",
+        "weight_bp": 779
+      },
+      {
+        "gift_id": "hypnolollipop-1",
+        "weight_bp": 778
+      },
+      {
+        "gift_id": "spyagaric-1",
+        "weight_bp": 995
+      },
+      {
+        "gift_id": "jackinthebox-1",
+        "weight_bp": 995
+      },
+      {
+        "gift_id": "petsnake-1",
+        "weight_bp": 995
+      },
+      {
+        "gift_id": "snakebox-1",
+        "weight_bp": 995
+      },
+      {
+        "gift_id": "stars-100",
+        "weight_bp": 450
+      },
+      {
+        "gift_id": "stars-300",
+        "weight_bp": 135
+      }
+    ],
+    "banner": "assets/cases/halloween.webp"
+  },
+  {
+    "id": "vesenniy",
+    "name": "Весенний",
+    "price_stars": 1000,
+    "category": "stars",
+    "theme": "spring",
+    "description": "Коллекция оригинальных Telegram Gifts",
+    "items": [
+      {
+        "gift_id": "rarebird-1",
+        "weight_bp": 41
+      },
+      {
+        "gift_id": "toybear-1",
+        "weight_bp": 320
+      },
+      {
+        "gift_id": "luckylocket-1",
+        "weight_bp": 320
+      },
+      {
+        "gift_id": "eternalrose-1",
+        "weight_bp": 319
+      },
+      {
+        "gift_id": "joyfulbundle-1",
+        "weight_bp": 152
+      },
+      {
+        "gift_id": "sakuraflower-1",
+        "weight_bp": 240
+      },
+      {
+        "gift_id": "cloverpin-1",
+        "weight_bp": 240
+      },
+      {
+        "gift_id": "springbasket-1",
+        "weight_bp": 480
+      },
+      {
+        "gift_id": "happybrownie-1",
+        "weight_bp": 477
+      },
+      {
+        "gift_id": "lushbouquet-1",
+        "weight_bp": 720
+      },
+      {
+        "gift_id": "lolpop-1",
+        "weight_bp": 717
+      },
+      {
+        "gift_id": "prettyposy-1",
+        "weight_bp": 900
+      },
+      {
+        "gift_id": "valentinebox-1",
+        "weight_bp": 897
+      },
+      {
+        "gift_id": "jellybunny-1",
+        "weight_bp": 1198
+      },
+      {
+        "gift_id": "berrybox-1",
+        "weight_bp": 1197
+      },
+      {
+        "gift_id": "easteregg-1",
+        "weight_bp": 1197
+      },
+      {
+        "gift_id": "stars-100",
+        "weight_bp": 450
+      },
+      {
+        "gift_id": "stars-300",
+        "weight_bp": 135
+      }
+    ],
+    "banner": "assets/cases/spring.webp"
+  },
+  {
+    "id": "letniy",
+    "name": "Летний",
+    "price_stars": 1000,
+    "category": "stars",
+    "theme": "summer",
+    "description": "Коллекция оригинальных Telegram Gifts",
+    "items": [
+      {
+        "gift_id": "lowrider-1",
+        "weight_bp": 50
+      },
+      {
+        "gift_id": "perfumebottle-1",
+        "weight_bp": 40
+      },
+      {
+        "gift_id": "snoopcigar-1",
+        "weight_bp": 118
+      },
+      {
+        "gift_id": "vintagecigar-1",
+        "weight_bp": 396
+      },
+      {
+        "gift_id": "skystilettos-1",
+        "weight_bp": 396
+      },
+      {
+        "gift_id": "surgeboard-1",
+        "weight_bp": 140
+      },
+      {
+        "gift_id": "snoopdogg-1",
+        "weight_bp": 109
+      },
+      {
+        "gift_id": "poolfloat-1",
+        "weight_bp": 330
+      },
+      {
+        "gift_id": "vicecream-1",
+        "weight_bp": 717
+      },
+      {
+        "gift_id": "jollychimp-1",
+        "weight_bp": 717
+      },
+      {
+        "gift_id": "whipcupcake-1",
+        "weight_bp": 994
+      },
+      {
+        "gift_id": "swagbag-1",
+        "weight_bp": 992
+      },
+      {
+        "gift_id": "chillflame-1",
+        "weight_bp": 1104
+      },
+      {
+        "gift_id": "bigyear-1",
+        "weight_bp": 1104
+      },
+      {
+        "gift_id": "instantramen-1",
+        "weight_bp": 1104
+      },
+      {
+        "gift_id": "libertyfigure-1",
+        "weight_bp": 1104
+      },
+      {
+        "gift_id": "stars-100",
+        "weight_bp": 450
+      },
+      {
+        "gift_id": "stars-300",
+        "weight_bp": 135
+      }
+    ],
+    "banner": "assets/cases/summer.webp"
+  },
+  {
+    "id": "sokrovisha",
+    "name": "Любовный",
+    "price_stars": 5000,
+    "category": "nft",
+    "theme": "love",
+    "description": "Коллекция оригинальных Telegram Gifts",
+    "items": [
+      {
+        "gift_id": "perfumebottle-1",
+        "weight_bp": 1000
+      },
+      {
+        "gift_id": "bondedring-1",
+        "weight_bp": 46
+      },
+      {
+        "gift_id": "luckylocket-1",
+        "weight_bp": 45
+      },
+      {
+        "gift_id": "diamondring-1",
+        "weight_bp": 136
+      },
+      {
+        "gift_id": "valentinebox-1",
+        "weight_bp": 136
+      },
+      {
+        "gift_id": "eternalrose-1",
+        "weight_bp": 273
+      },
+      {
+        "gift_id": "toybear-1",
+        "weight_bp": 273
+      },
+      {
+        "gift_id": "cupidcharm-1",
+        "weight_bp": 455
+      },
+      {
+        "gift_id": "skystilettos-1",
+        "weight_bp": 455
+      },
+      {
+        "gift_id": "trappedheart-1",
+        "weight_bp": 682
+      },
+      {
+        "gift_id": "lovepotion-1",
+        "weight_bp": 910
+      },
+      {
+        "gift_id": "genielamp-1",
+        "weight_bp": 910
+      },
+      {
+        "gift_id": "lovecandle-1",
+        "weight_bp": 910
+      },
+      {
+        "gift_id": "blingbinky-1",
+        "weight_bp": 910
+      },
+      {
+        "gift_id": "cookieheart-1",
+        "weight_bp": 1137
+      },
+      {
+        "gift_id": "prettyposy-1",
+        "weight_bp": 1137
+      },
+      {
+        "gift_id": "stars-100",
+        "weight_bp": 450
+      },
+      {
+        "gift_id": "stars-300",
+        "weight_bp": 135
+      }
+    ],
+    "banner": "assets/cases/love.webp"
+  },
+  {
+    "id": "den_telegram",
+    "name": "Техно",
+    "price_stars": 2500,
+    "category": "nft",
+    "theme": "techno",
+    "description": "Коллекция оригинальных Telegram Gifts",
+    "items": [
+      {
+        "gift_id": "durovsglasses-1",
+        "weight_bp": 429
+      },
+      {
+        "gift_id": "artisanbrick-1",
+        "weight_bp": 571
+      },
+      {
+        "gift_id": "recordplayer-1",
+        "weight_bp": 51
+      },
+      {
+        "gift_id": "inputkey-1",
+        "weight_bp": 51
+      },
+      {
+        "gift_id": "finepen-1",
+        "weight_bp": 102
+      },
+      {
+        "gift_id": "deskcalendar-1",
+        "weight_bp": 102
+      },
+      {
+        "gift_id": "lightsword-1",
+        "weight_bp": 255
+      },
+      {
+        "gift_id": "moodpack-1",
+        "weight_bp": 255
+      },
+      {
+        "gift_id": "bowtie-1",
+        "weight_bp": 510
+      },
+      {
+        "gift_id": "ionicdryer-1",
+        "weight_bp": 510
+      },
+      {
+        "gift_id": "partysparkler-1",
+        "weight_bp": 765
+      },
+      {
+        "gift_id": "tamagadget-1",
+        "weight_bp": 1020
+      },
+      {
+        "gift_id": "instantramen-1",
+        "weight_bp": 1122
+      },
+      {
+        "gift_id": "surgeboard-1",
+        "weight_bp": 1122
+      },
+      {
+        "gift_id": "chillflame-1",
+        "weight_bp": 1275
+      },
+      {
+        "gift_id": "moneypot-1",
+        "weight_bp": 1275
+      },
+      {
+        "gift_id": "stars-100",
+        "weight_bp": 450
+      },
+      {
+        "gift_id": "stars-300",
+        "weight_bp": 135
+      }
+    ],
+    "banner": "assets/cases/techno.webp"
+  },
+  {
+    "id": "vip",
+    "name": "VIP",
+    "price_stars": 15000,
+    "category": "nft",
+    "theme": "vip",
+    "description": "Коллекция оригинальных Telegram Gifts",
+    "items": [
+      {
+        "gift_id": "preciouspeach-1",
+        "weight_bp": 77
+      },
+      {
+        "gift_id": "durovscap-1",
+        "weight_bp": 923
+      },
+      {
+        "gift_id": "khabibspapakha-1",
+        "weight_bp": 45
+      },
+      {
+        "gift_id": "lootbag-1",
+        "weight_bp": 90
+      },
+      {
+        "gift_id": "ufcstrike-1",
+        "weight_bp": 90
+      },
+      {
+        "gift_id": "nailbracelet-1",
+        "weight_bp": 180
+      },
+      {
+        "gift_id": "ionicdryer-1",
+        "weight_bp": 180
+      },
+      {
+        "gift_id": "mightyarm-1",
+        "weight_bp": 360
+      },
+      {
+        "gift_id": "snoopcigar-1",
+        "weight_bp": 360
+      },
+      {
+        "gift_id": "gemsignet-1",
+        "weight_bp": 540
+      },
+      {
+        "gift_id": "diamondring-1",
+        "weight_bp": 810
+      },
+      {
+        "gift_id": "durovsglasses-1",
+        "weight_bp": 810
+      },
+      {
+        "gift_id": "eternalrose-1",
+        "weight_bp": 1125
+      },
+      {
+        "gift_id": "westsidesign-1",
+        "weight_bp": 1125
+      },
+      {
+        "gift_id": "blingbinky-1",
+        "weight_bp": 1350
+      },
+      {
+        "gift_id": "heroichelmet-1",
+        "weight_bp": 1350
+      },
+      {
+        "gift_id": "stars-100",
+        "weight_bp": 450
+      },
+      {
+        "gift_id": "stars-300",
+        "weight_bp": 135
+      }
+    ],
+    "banner": "assets/cases/vip.webp"
+  },
+  {
+    "id": "mificheskiy",
+    "name": "Мифический",
+    "price_stars": 5000,
+    "category": "nft",
+    "theme": "mythic",
+    "description": "Коллекция оригинальных Telegram Gifts",
+    "items": [
+      {
+        "gift_id": "heroichelmet-1",
+        "weight_bp": 91
+      },
+      {
+        "gift_id": "scaredcat-1",
+        "weight_bp": 91
+      },
+      {
+        "gift_id": "astralshard-1",
+        "weight_bp": 273
+      },
+      {
+        "gift_id": "magicpotion-1",
+        "weight_bp": 545
+      },
+      {
+        "gift_id": "kissedfrog-1",
+        "weight_bp": 134
+      },
+      {
+        "gift_id": "electricskull-1",
+        "weight_bp": 267
+      },
+      {
+        "gift_id": "nekohelmet-1",
+        "weight_bp": 445
+      },
+      {
+        "gift_id": "voodoodoll-1",
+        "weight_bp": 445
+      },
+      {
+        "gift_id": "sharptongue-1",
+        "weight_bp": 534
+      },
+      {
+        "gift_id": "genielamp-1",
+        "weight_bp": 534
+      },
+      {
+        "gift_id": "mythmask-1",
+        "weight_bp": 801
+      },
+      {
+        "gift_id": "khabibspapakha-1",
+        "weight_bp": 801
+      },
+      {
+        "gift_id": "victorymedal-1",
+        "weight_bp": 891
+      },
+      {
+        "gift_id": "ufcstrike-1",
+        "weight_bp": 891
+      },
+      {
+        "gift_id": "lightsword-1",
+        "weight_bp": 1336
+      },
+      {
+        "gift_id": "rarebird-1",
+        "weight_bp": 1336
+      },
+      {
+        "gift_id": "stars-100",
+        "weight_bp": 450
+      },
+      {
+        "gift_id": "stars-300",
+        "weight_bp": 135
+      }
+    ],
+    "banner": "assets/cases/mythic.webp"
+  },
+  {
+    "id": "ot_durova",
+    "name": "От Дурова",
+    "price_stars": 10000,
+    "category": "nft",
+    "theme": "durov",
+    "description": "Коллекция оригинальных Telegram Gifts",
+    "items": [
+      {
+        "gift_id": "durovscap-1",
+        "weight_bp": 24
+      },
+      {
+        "gift_id": "preciouspeach-1",
+        "weight_bp": 24
+      },
+      {
+        "gift_id": "durovsglasses-1",
+        "weight_bp": 49
+      },
+      {
+        "gift_id": "heroichelmet-1",
+        "weight_bp": 49
+      },
+      {
+        "gift_id": "lootbag-1",
+        "weight_bp": 122
+      },
+      {
+        "gift_id": "astralshard-1",
+        "weight_bp": 732
+      },
+      {
+        "gift_id": "westsidesign-1",
+        "weight_bp": 265
+      },
+      {
+        "gift_id": "artisanbrick-1",
+        "weight_bp": 529
+      },
+      {
+        "gift_id": "nailbracelet-1",
+        "weight_bp": 529
+      },
+      {
+        "gift_id": "minioscar-1",
+        "weight_bp": 635
+      },
+      {
+        "gift_id": "mightyarm-1",
+        "weight_bp": 635
+      },
+      {
+        "gift_id": "swisswatch-1",
+        "weight_bp": 794
+      },
+      {
+        "gift_id": "gemsignet-1",
+        "weight_bp": 794
+      },
+      {
+        "gift_id": "signetring-1",
+        "weight_bp": 1323
+      },
+      {
+        "gift_id": "victorymedal-1",
+        "weight_bp": 1323
+      },
+      {
+        "gift_id": "bondedring-1",
+        "weight_bp": 1588
+      },
+      {
+        "gift_id": "stars-100",
+        "weight_bp": 450
+      },
+      {
+        "gift_id": "stars-300",
+        "weight_bp": 135
+      }
+    ],
+    "banner": "assets/cases/durov.webp"
+  }
+]

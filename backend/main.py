@@ -27,8 +27,8 @@ FREE_CASE_CHANNEL_URL = (os.getenv("FREE_CASE_CHANNEL_URL") or "https://t.me/Clo
 FREE_CASE_COOLDOWN = timedelta(hours=24)
 FREE_CASE_STAR_PRIZES = (5, 10, 25, 50, 100, 250, 500, 700)
 ADMIN_IDS = {x.strip() for x in os.getenv("ADMIN_TG_IDS", "").split(",") if x.strip()}
-GIFTS_FILE = PROJECT / "frontend" / "src" / "data" / "gifts.json"
-CASES_FILE = PROJECT / "frontend" / "src" / "data" / "cases.json"
+GIFTS_FILE = BASE / "catalog" / "gifts.json"
+CASES_FILE = BASE / "catalog" / "cases.json"
 
 app = FastAPI(title="CloudeGift API", version="0.1.0")
 app.add_middleware(
@@ -58,7 +58,19 @@ def connect():
 def now():
     return datetime.now(timezone.utc).isoformat()
 
+def read_catalog(path: Path):
+    try:
+        rows = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise RuntimeError(f"Не удалось загрузить каталог {path.name}") from exc
+    if not isinstance(rows, list) or not rows:
+        raise RuntimeError(f"Каталог {path.name} пуст или повреждён")
+    return rows
+
+
 def init_db():
+    gifts = read_catalog(GIFTS_FILE)
+    cases = read_catalog(CASES_FILE)
     with connect() as con:
         con.executescript("""
         CREATE TABLE IF NOT EXISTS users(
@@ -155,16 +167,20 @@ def init_db():
         CREATE INDEX IF NOT EXISTS idx_inventory_user ON inventory(tg_id,status);
         CREATE INDEX IF NOT EXISTS idx_transactions_user ON transactions(tg_id,created_at);
         """)
+        con.execute("BEGIN IMMEDIATE")
         withdrawal_columns={row["name"] for row in con.execute("PRAGMA table_info(withdrawal_requests)").fetchall()}
         if "inventory_ids_json" not in withdrawal_columns:
             con.execute("ALTER TABLE withdrawal_requests ADD COLUMN inventory_ids_json TEXT NOT NULL DEFAULT '[]'")
-        if GIFTS_FILE.exists():
-            for g in json.loads(GIFTS_FILE.read_text(encoding="utf-8")):
-                con.execute("""INSERT INTO gifts(id,name,price_stars,image,rarity,image_status)
-                  VALUES(?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,
-                  price_stars=excluded.price_stars,image=excluded.image,rarity=excluded.rarity,
-                  image_status=excluded.image_status""",
-                  (g["id"],g["name"],g["price_stars"],g.get("image"),g.get("rarity"),g.get("image_status")))
+        case_columns = {row["name"] for row in con.execute("PRAGMA table_info(cases)")}
+        for column in ("banner", "description"):
+            if column not in case_columns:
+                con.execute(f"ALTER TABLE cases ADD COLUMN {column} TEXT")
+        for g in gifts:
+            con.execute("""INSERT INTO gifts(id,name,price_stars,image,rarity,image_status)
+              VALUES(?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,
+              price_stars=excluded.price_stars,image=excluded.image,rarity=excluded.rarity,
+              image_status=excluded.image_status""",
+              (g["id"],g["name"],g["price_stars"],g.get("image"),g.get("rarity"),g.get("image_status")))
         # Служебные призы-звёзды хранятся в gifts для связи case_items,
         # но не попадают в магазин и не добавляются в NFT-инвентарь.
         for amount in (10,25,50,80,100,250,300,500,1000,1500,2000,2500,3000,4000,5000,10000,20000):
@@ -172,16 +188,16 @@ def init_db():
               "INSERT OR IGNORE INTO gifts(id,name,price_stars,image,rarity,image_status) VALUES(?,?,?,?,?,?)",
               (f"stars-{amount}",f"{amount} Telegram Stars",amount,None,"Звёзды","star")
             )
-        if CASES_FILE.exists():
-            for c in json.loads(CASES_FILE.read_text(encoding="utf-8")):
-                con.execute("""INSERT INTO cases(id,name,price_stars,category,theme,is_active)
-                  VALUES(?,?,?,?,?,1) ON CONFLICT(id) DO UPDATE SET name=excluded.name,
-                  price_stars=excluded.price_stars,category=excluded.category,theme=excluded.theme,is_active=1""",
-                  (c["id"],c["name"],c["price_stars"],c["category"],c["theme"]))
-                con.execute("DELETE FROM case_items WHERE case_id=?",(c["id"],))
-                for item in c["items"]:
-                    con.execute("INSERT INTO case_items(case_id,gift_id,weight_bp) VALUES(?,?,?)",
-                                (c["id"],item["gift_id"],item["weight_bp"]))
+        for c in cases:
+            con.execute("""INSERT INTO cases(id,name,price_stars,category,theme,banner,description,is_active)
+              VALUES(?,?,?,?,?,?,?,1) ON CONFLICT(id) DO UPDATE SET name=excluded.name,
+              price_stars=excluded.price_stars,category=excluded.category,theme=excluded.theme,
+              banner=excluded.banner,description=excluded.description,is_active=1""",
+              (c["id"],c["name"],c["price_stars"],c["category"],c["theme"],c.get("banner"),c.get("description")))
+            con.execute("DELETE FROM case_items WHERE case_id=?",(c["id"],))
+            for item in c["items"]:
+                con.execute("INSERT INTO case_items(case_id,gift_id,weight_bp) VALUES(?,?,?)",
+                            (c["id"],item["gift_id"],item["weight_bp"]))
         con.execute("DELETE FROM promos WHERE code='CLOUDYSTART'")
 
 @app.on_event("startup")

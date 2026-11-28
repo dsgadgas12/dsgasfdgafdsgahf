@@ -8,14 +8,12 @@ import {
   TrendingUp, Headphones, BookOpen, Globe, Ticket, Clock3, Plane,
   CheckCircle2, XCircle, CalendarDays, ArrowDownToLine, CircleDollarSign, Mail, Bot, ArrowUpRight, ArrowDownUp, ChevronDown
 } from "lucide-react";
-import giftsRaw from "./data/gifts.json";
-import casesRaw from "./data/cases.json";
 import { api, setAuthToken } from "./api";
 import TgsSticker from "./components/TgsSticker";
 
 type GiftItem = {
-  id: string; name: string; price_stars: number; price_usd: number;
-  image: string | null; rarity: string; source_archive: string; image_status: string;
+  id: string; name: string; price_stars: number;
+  image: string | null; rarity: string; image_status: string;
 };
 type CasePrize = { gift_id: string; weight_bp: number };
 type CaseItem = {
@@ -39,26 +37,9 @@ type CrashState = {
 type OwnedGift = { uid: string; giftId: string; acquiredAt: number };
 type Page = "games"|"leaders"|"shop"|"profile"|"cases"|"case-detail"|"free-case"|"upgrade"|"slots"|"crash"|"mines"|"admin";
 
-const gifts = giftsRaw as GiftItem[];
-const cases = casesRaw as CaseItem[];
-const freeCaseGifts = gifts
-  .filter(g => g.price_stars >= 800 && g.image_status !== "star")
-  .sort((a,b) => b.price_stars-a.price_stars);
-const freeCaseStarAmounts = [2,5,10,25,50,100,250,500,700];
-const freeCase: CaseItem = {
-  id: "free-case",
-  name: "Бесплатный кейс",
-  price_stars: 0,
-  category: "nft",
-  theme: "mythic",
-  description: "Бесплатное открытие",
-  banner: "assets/banners/free-case.png",
-  items: [
-    ...freeCaseStarAmounts.map(amount => ({gift_id:`stars-${amount}`,weight_bp:0})),
-    ...freeCaseGifts.map(g => ({gift_id:g.id,weight_bp:0}))
-  ]
-};
-const byId = new Map<string,GiftItem>(gifts.map(g => [g.id, g] as const));
+type Catalog = { gifts: GiftItem[]; cases: CaseItem[]; byId: Map<string, GiftItem> };
+const emptyCatalog: Catalog = { gifts: [], cases: [], byId: new Map() };
+const CatalogContext = React.createContext<Catalog>(emptyCatalog);
 const fmt = (n:number) => Math.round(n).toLocaleString("ru-RU");
 const imageSrc = (g:GiftItem) => g.image ? `/${g.image}` : "";
 const rarityClass = (r:string) => ({
@@ -68,7 +49,7 @@ const rarityClass = (r:string) => ({
 const isStarPrize=(p:CasePrize)=>p.gift_id.startsWith("stars-");
 const starPrizeAmount=(p:CasePrize)=>isStarPrize(p)?Number(p.gift_id.split("-")[1]):0;
 const starTier=(n:number)=>n<=80?"star-grey":n<=300?"star-blue":n<=999?"star-pink":"star-red";
-const prizeName=(p:CasePrize)=>isStarPrize(p)?`${fmt(starPrizeAmount(p))} ⭐`:byId.get(p.gift_id)?.name||"Подарок";
+const prizeName=(p:CasePrize, byId:Map<string,GiftItem>)=>isStarPrize(p)?`${fmt(starPrizeAmount(p))} ⭐`:byId.get(p.gift_id)?.name||"Подарок";
 const prettyDate=(value:string)=>new Date(value).toLocaleString("ru-RU",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});
 const formatCompactCountdown=(milliseconds:number)=>{
   const ms=Math.max(0,Math.floor(milliseconds));
@@ -104,6 +85,7 @@ function GiftImage({gift, className=""}:{gift:GiftItem;className?:string}) {
     : <div className={`gift-placeholder ${className}`}><Package size={28}/><small>Нет модели</small></div>;
 }
 function PrizeVisual({prize,className=""}:{prize:CasePrize;className?:string}) {
+  const {byId}=React.useContext(CatalogContext);
   if(isStarPrize(prize)) {
     const amount=starPrizeAmount(prize);
     return <div className={`star-prize-visual ${starTier(amount)} ${className}`}><CurrencyIcon/><b>{fmt(amount)}</b></div>;
@@ -178,6 +160,7 @@ function CaseRoulette({c,selected,fast,onComplete}:{c:CaseItem;selected:CasePriz
   </div>;
 }
 function CaseMultiPreview({c,count}:{c:CaseItem;count:number}) {
+  const {byId}=React.useContext(CatalogContext);
   const rows=useMemo(()=>Array.from({length:count},()=>{
     const source=c.items.length?c.items:[{gift_id:"stars-2",weight_bp:10000}];
     const shuffled=[...source].sort(()=>Math.random()-.5);
@@ -187,7 +170,7 @@ function CaseMultiPreview({c,count}:{c:CaseItem;count:number}) {
     {rows.map((row,lane)=><div className="case-multi-preview-row case-idle-window" key={`${c.id}-${count}-${lane}`}>
       <div className="case-idle-track" style={{animationDuration:`${row.length*(count===1?2.5:1.8)}s`,animationDelay:`-${lane*3}s`}}>
         {[0,1].map(copy=><div className="case-idle-group" key={copy} aria-hidden={copy===1?true:undefined}>{row.map((prize,i)=><div className="case-idle-cell" key={`${i}-${prize.gift_id}`}>
-          <PrizeVisual prize={prize}/>{count===1&&<><b>{prizeName(prize)}</b><StarPrice value={isStarPrize(prize)?starPrizeAmount(prize):byId.get(prize.gift_id)?.price_stars||0}/></>}
+          <PrizeVisual prize={prize}/>{count===1&&<><b>{prizeName(prize,byId)}</b><StarPrice value={isStarPrize(prize)?starPrizeAmount(prize):byId.get(prize.gift_id)?.price_stars||0}/></>}
         </div>)}</div>)}
       </div>
     </div>)}
@@ -228,7 +211,13 @@ function Modal({children,onClose,title="CloudeGift"}:{children:React.ReactNode;o
 }
 
 export default function App() {
+  const [catalog,setCatalog]=useState<Catalog>(emptyCatalog);
+  const {gifts,byId}=catalog;
   const [introVisible,setIntroVisible]=useState(()=>{try{return !sessionStorage.getItem("cg_intro_seen");}catch{return true;}});
+  const finishIntro=React.useCallback(()=>{
+    try{sessionStorage.setItem("cg_intro_seen","1");}catch{}
+    setIntroVisible(false);
+  },[]);
   const [page,setPage]=useState<Page>("games");
   const [pageHistory,setPageHistory]=useState<Page[]>([]);
   const [activeCase,setActiveCase]=useState<CaseItem|null>(null);
@@ -313,8 +302,14 @@ export default function App() {
       setAuthToken(res.access_token);
       setProfile(res.user);
       setIsAdmin(!!res.user?.is_admin);
-      const me:any=await api("/api/me");
+      const [me,serverGifts,serverCases]=await Promise.all([
+        api<any>("/api/me"),
+        api<GiftItem[]>("/api/catalog/gifts"),
+        api<CaseItem[]>("/api/cases")
+      ]);
       if(!active)return;
+      if(!serverGifts.length || !serverCases.length)throw new Error("Сервер вернул пустой каталог кейсов или подарков.");
+      setCatalog({gifts:serverGifts,cases:serverCases,byId:new Map(serverGifts.map(g=>[g.id,g]))});
       setBalance(Number(me.user?.balance)||0);
       setInventory((me.inventory||[]).map((x:any)=>({uid:String(x.inventory_id),giftId:x.gift_id,acquiredAt:Date.parse(x.acquired_at)})));
       setAuthStatus("ready");
@@ -664,8 +659,11 @@ export default function App() {
       (rarityFilter==="Все"||g.rarity===rarityFilter) &&
       (shopCategory==="Все"||g.rarity===shopCategory)
     ).sort((a,b)=>sort==="asc"?a.price_stars-b.price_stars:b.price_stars-a.price_stars);
-  },[search,sort,rarityFilter,shopCategory]);
+  },[gifts,search,sort,rarityFilter,shopCategory]);
 
+  if(authStatus==="checking" || (authStatus==="ready" && introVisible)){
+    return <IntroSplash onDone={finishIntro} loop={!introVisible && authStatus==="checking"}/>;
+  }
   if(authStatus!=="ready"){
     return <div className="app-shell auth-gate">
       <header className="topbar auth-topbar">
@@ -673,9 +671,8 @@ export default function App() {
       </header>
       <main className="auth-gate-content">
         <div className="auth-gate-card">
-          <Shield size={34}/>
-          <h1>{authStatus==="checking"?"Подключаем CloudeGift":authStatus==="telegram_required"?"Откройте CloudeGift в Telegram":"Не удалось войти"}</h1>
-          <p>{authStatus==="checking"?"Проверяем защищённую сессию Telegram.":authStatus==="telegram_required"?"Баланс, инвентарь и игровые действия доступны только после проверки Telegram-профиля. Откройте приложение через кнопку бота.":authError||"Проверьте настройки бота и попробуйте открыть приложение ещё раз."}</p>
+          <h1>{authStatus==="telegram_required"?"Откройте CloudeGift в Telegram":"Не удалось войти"}</h1>
+          <p>{authStatus==="telegram_required"?"Баланс, инвентарь и игровые действия доступны только после проверки Telegram-профиля. Откройте приложение через кнопку бота.":authError||"Проверьте настройки бота и попробуйте открыть приложение ещё раз."}</p>
           {authStatus==="error"&&<button type="button" className="btn btn-primary" onClick={()=>window.location.reload()}>Повторить вход</button>}
         </div>
       </main>
@@ -689,7 +686,7 @@ export default function App() {
     {id:"profile" as Page,label:"Профиль",icon:UserCircle},
   ];
 
-  return <MotionConfig reducedMotion="user"><div className={`app-shell ${page==="profile"?"is-profile":""}`}>
+  return <CatalogContext.Provider value={catalog}><MotionConfig reducedMotion="user"><div className={`app-shell ${page==="profile"?"is-profile":""}`}>
     {page==="profile"&&<div className="profile-clouds" aria-hidden="true"/>}
     <header className="topbar">
       <button className="brand" type="button" aria-label="CloudeGift — на главную" onClick={()=>goRoot("games")}>
@@ -786,7 +783,7 @@ export default function App() {
               const value=isStarPrize(prize)?starPrizeAmount(prize):(gift?.price_stars||0);
               return <div className="batch-result-item" key={`${prize.gift_id}-${index}`}>
                 <div className="batch-result-art">{isStarPrize(prize)?<PrizeVisual prize={prize}/>:gift?<GiftImage gift={gift}/>:<Package/>}</div>
-                <b>{prizeName(prize)}</b>
+                <b>{prizeName(prize,byId)}</b>
                 <StarPrice value={value}/>
               </div>;
             })}
@@ -886,28 +883,30 @@ export default function App() {
     </AnimatePresence>
     {toast && <div className="toast" role="status" aria-live="polite">{toast}</div>}
   </div>
-  <AnimatePresence>{introVisible&&<IntroSplash onDone={()=>setIntroVisible(false)}/>}</AnimatePresence>
-  </MotionConfig>;
+  </MotionConfig></CatalogContext.Provider>;
 }
 
-function IntroSplash({onDone}:{onDone:()=>void}) {
+function IntroSplash({onDone,loop}:{onDone:()=>void;loop:boolean}) {
   const videoRef=useRef<HTMLVideoElement>(null);
+  const reduced=useReducedMotion();
+  const [showLogo,setShowLogo]=useState(false);
   useEffect(()=>{
-    try{sessionStorage.setItem("cg_intro_seen","1");}catch{}
-    if(window.matchMedia("(prefers-reduced-motion: reduce)").matches){onDone();return;}
-    const fallback=window.setTimeout(onDone,5000);
+    if(reduced){onDone();return;}
+    const timer=window.setTimeout(onDone,5500);
     const video=videoRef.current;
-    if(video){
-      const play=video.play();
-      if(play&&typeof play.catch==="function")play.catch(()=>onDone());
-    }
-    return()=>window.clearTimeout(fallback);
-  },[]);
-  return <motion.div className="intro-splash" initial={{opacity:1}} exit={{opacity:0}} transition={{duration:.38}}>
-    <video ref={videoRef} src="/assets/cloudegift-intro.mp4" autoPlay muted playsInline preload="auto"
-      onEnded={onDone} onError={onDone} onClick={onDone}/>
-    <button className="intro-skip" onClick={onDone}>Пропустить <ArrowRight size={16}/></button>
-  </motion.div>;
+    let active=true;
+    video?.play().catch(()=>{
+      if(active){setShowLogo(true);onDone();}
+    });
+    return()=>{active=false;window.clearTimeout(timer);};
+  },[onDone,reduced]);
+  return <div className="intro-splash" role="status" aria-label="Загрузка CloudeGift">
+    {reduced||showLogo
+      ? <img src="/assets/cloudegift-logo.png" alt="CloudeGift"/>
+      : <video ref={videoRef} src="/assets/cloudegift-intro.mp4" poster="/assets/cloudegift-logo.png"
+          autoPlay muted playsInline loop={loop} preload="auto" onEnded={onDone}
+          onError={()=>{setShowLogo(true);onDone();}}/>}
+  </div>;
 }
 
 function LiveFeed({items}:{items:any[]}) {
@@ -932,6 +931,7 @@ function LiveFeed({items}:{items:any[]}) {
 }
 
 function MenuCaseIcon() {
+  const {byId}=React.useContext(CatalogContext);
   const cat=byId.get("scaredcat-1");
   const peach=byId.get("preciouspeach-1");
   return <div className="menu-case-icon" aria-hidden="true">
@@ -971,7 +971,7 @@ function shuffleSlotGifts(source:GiftItem[]) {
   return result;
 }
 
-function buildSlotReel(target:GiftItem, targetIndex:number) {
+function buildSlotReel(gifts:GiftItem[],target:GiftItem, targetIndex:number) {
   const pool=shuffleSlotGifts(gifts);
   while(pool.length<targetIndex) pool.push(gifts[Math.floor(Math.random()*gifts.length)]);
   pool.splice(targetIndex,0,target);
@@ -979,6 +979,7 @@ function buildSlotReel(target:GiftItem, targetIndex:number) {
 }
 
 function SlotsScreen({balance,setBalance,token,onToast,onPrize}:{balance:number;setBalance:React.Dispatch<React.SetStateAction<number>>;token:string;onToast:(s:string)=>void;onPrize:(giftId:string,uid:string)=>string}) {
+  const {gifts}=React.useContext(CatalogContext);
   const [bet,setBet]=useState(25);
   const [busy,setBusy]=useState(false);
   const [spinning,setSpinning]=useState(false);
@@ -1018,9 +1019,9 @@ function SlotsScreen({balance,setBalance,token,onToast,onPrize}:{balance:number;
       }else{
         const shuffled=shuffleSlotGifts(gifts);
         targets=shuffled.slice(0,3);
-        if(targets.length<3)targets=[gifts[0],gifts[1],gifts[2]];
+        while(targets.length<3)targets.push(shuffled[0]);
       }
-      const nextReels=targets.map(target=>buildSlotReel(target,targetIndex));
+      const nextReels=targets.map(target=>buildSlotReel(gifts,target,targetIndex));
       setReels(nextReels);
       setSpinKey(key=>key+1);
       setResult(response);
@@ -1084,6 +1085,24 @@ function SlotsScreen({balance,setBalance,token,onToast,onPrize}:{balance:number;
 }
 
 function FreeCasesScreen({onChoose}:{onChoose:(c:CaseItem)=>void}) {
+  const {gifts}=React.useContext(CatalogContext);
+  const freeCaseGifts = gifts
+    .filter(g => g.price_stars >= 800 && g.image_status !== "star")
+    .sort((a,b) => b.price_stars-a.price_stars);
+  const freeCaseStarAmounts = [2,5,10,25,50,100,250,500,700];
+  const freeCase: CaseItem = {
+    id: "free-case",
+    name: "Бесплатный кейс",
+    price_stars: 0,
+    category: "nft",
+    theme: "mythic",
+    description: "Бесплатное открытие",
+    banner: "assets/banners/free-case.png",
+    items: [
+      ...freeCaseStarAmounts.map(amount => ({gift_id:`stars-${amount}`,weight_bp:0})),
+      ...freeCaseGifts.map(g => ({gift_id:g.id,weight_bp:0}))
+    ]
+  };
   return <div className="page-stack">
     <div className="page-title"><h1>Бесплатный кейс</h1><p>Одно открытие в 24 часа после выполнения заданий</p></div>
     <div className="case-grid">
@@ -1093,12 +1112,14 @@ function FreeCasesScreen({onChoose}:{onChoose:(c:CaseItem)=>void}) {
 }
 
 function CasesScreen({onChoose}:{onChoose:(c:CaseItem)=>void}) {
+  const {cases}=React.useContext(CatalogContext);
   return <div className="page-stack">
     <div className="page-title"><h1>Кейсы</h1><p>Подарки и Stars в каждом кейсе</p></div>
     <div className="case-grid">{cases.map(c=><CaseCard key={c.id} c={c} onClick={()=>onChoose(c)}/>)}</div>
   </div>;
 }
 function CaseCard({c,onClick}:{c:CaseItem;onClick:()=>void}) {
+  const {byId}=React.useContext(CatalogContext);
   if(c.id==="free-case")return <button className="case-card free-art-card" onClick={()=>{tap();onClick();}} aria-label="Бесплатный кейс"><img src="/assets/banners/free-case.png" alt="Бесплатный кейс" loading="lazy"/></button>;
   const preview=c.items.filter(x=>!isStarPrize(x)).slice(0,3).map(x=>byId.get(x.gift_id)).filter(Boolean) as GiftItem[];
   return <button className={`case-card theme-${c.theme} ${c.id==="free-case"?"case-card-free":""} ${c.banner?"has-banner":""}`} onClick={()=>{tap();onClick();}}>
@@ -1117,6 +1138,7 @@ function CaseCard({c,onClick}:{c:CaseItem;onClick:()=>void}) {
   </button>;
 }
 function CaseDetail({c,opening,roulettePrizes,rouletteFastMode,openCount,fastMode,onFastModeChange,onCountChange,freeCaseRemainingMs,onOpen,onRouletteComplete}:{c:CaseItem;opening:boolean;roulettePrizes:CasePrize[]|null;rouletteFastMode:boolean;openCount:number;fastMode:boolean;onFastModeChange:(value:boolean)=>void;onCountChange:(count:number)=>void;freeCaseRemainingMs:number;onOpen:(fast:boolean)=>void;onRouletteComplete:()=>void}) {
+  const {byId}=React.useContext(CatalogContext);
   const prizes=c.items.map(item=>({item,gift:byId.get(item.gift_id)})).sort((a,b)=>Number(isStarPrize(a.item))-Number(isStarPrize(b.item)));
   const count=c.id==="free-case"?1:Math.max(1,Math.min(5,openCount));
   const totalCost=c.price_stars*count;
@@ -1154,7 +1176,7 @@ function CaseDetail({c,opening,roulettePrizes,rouletteFastMode,openCount,fastMod
         const value=isStarPrize(item)?starPrizeAmount(item):(gift?.price_stars||0);
         return <div className={`prize-tile ${isStarPrize(item)?"prize-tile-stars":""}`} key={item.gift_id}>
           <PrizeVisual prize={item}/>
-          <b>{prizeName(item)}</b>
+          <b>{prizeName(item,byId)}</b>
           <StarPrice value={value}/>
           <span className={`rarity ${isStarPrize(item)?starTier(starPrizeAmount(item)):rarityClass(gift?.rarity||"Обычный")}`}>{isStarPrize(item)?"Звёзды":gift?.rarity||"Подарок"}</span>
         </div>;
@@ -1164,6 +1186,7 @@ function CaseDetail({c,opening,roulettePrizes,rouletteFastMode,openCount,fastMod
 }
 
 function ShopScreen({items,search,setSearch,sort,setSort,rarity,setRarity,onGift}:{items:GiftItem[];search:string;setSearch:(v:string)=>void;sort:"asc"|"desc";setSort:(v:"asc"|"desc")=>void;rarity:string;setRarity:(v:string)=>void;onGift:(g:GiftItem)=>void}) {
+  const {gifts}=React.useContext(CatalogContext);
   const rarities=["Все","Обычный","Необычный","Редкий","Эпический","Легендарный","Мифический"];
   return <div className="shop-page">
     <div className="page-title centered"><h1>Магазин подарков</h1><p>Подарки для вашей коллекции</p></div>
@@ -1195,6 +1218,7 @@ function LeadersScreen() {
 }
 
 function ProfileScreen({name,photoUrl,inventory,onTopup,onWithdraw,onGift,onAdmin,isAdmin}:{name:string;photoUrl:string;inventory:OwnedGift[];onTopup:()=>void;onWithdraw:()=>void;onGift:(gift:GiftItem,uid:string)=>void;onAdmin:()=>void;isAdmin:boolean}) {
+  const {byId}=React.useContext(CatalogContext);
   const [photoFailed,setPhotoFailed]=useState(false);
   useEffect(()=>setPhotoFailed(false),[photoUrl]);
   const initials=name.trim().split(/\s+/).slice(0,2).map(part=>part[0]).join("").toUpperCase();
@@ -1212,6 +1236,7 @@ function ProfileScreen({name,photoUrl,inventory,onTopup,onWithdraw,onGift,onAdmi
 }
 
 function UpgradeScreen({inventory,initialUid,token,onBack,onRemove,onAdd,onToast,onBusy}:{inventory:OwnedGift[];initialUid:string;token:string;onBack:()=>void;onRemove:(uid:string)=>void;onAdd:(id:string,uid:string)=>void;onToast:(s:string)=>void;onBusy:(busy:boolean)=>void}) {
+  const {gifts,byId}=React.useContext(CatalogContext);
   const [sourceUid,setSourceUid]=useState(initialUid||inventory[0]?.uid||"");
   const [targetId,setTargetId]=useState("");
   const [picker,setPicker]=useState<"source"|"target"|null>(null);
@@ -1575,6 +1600,7 @@ function MinesScreen({balance,setBalance,token,onToast}:{balance:number;setBalan
 }
 
 function AdminScreen({onBack,token,onToast,ownId,onRefresh}:{onBack:()=>void;token:string;onToast:(s:string)=>void;ownId:string|number;onRefresh:()=>Promise<void>}) {
+  const {gifts}=React.useContext(CatalogContext);
   const [tgId,setTgId]=useState("");
   const [adminBusy,setAdminBusy]=useState(false);
   const [amount,setAmount]=useState("1000");

@@ -9,6 +9,10 @@ REQUIRED_FRONTEND = ROOT / "frontend" / "dist" / "index.html"
 if not REQUIRED_FRONTEND.is_file():
     raise SystemExit("Сначала соберите frontend: build-for-bothost.ps1 или ./build-for-bothost.sh")
 
+for catalog_name in ("gifts.json", "cases.json"):
+    if not (ROOT / "backend" / "catalog" / catalog_name).is_file():
+        raise SystemExit(f"Отсутствует файл каталога backend/catalog/{catalog_name}")
+
 EXCLUDED_DIRS = {"node_modules", ".venv", "__pycache__", ".git", ".pytest_cache", ".mypy_cache"}
 EXCLUDED_FILES = {".env", ".env.local", ".env.production", ".DS_Store"}
 
