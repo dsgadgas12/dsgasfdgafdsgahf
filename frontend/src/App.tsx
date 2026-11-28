@@ -945,30 +945,22 @@ function WithdrawalProgress({request:w}:{request:WithdrawalRequest}) {
 
 // Cosmetic prize showcase only. It is never a source of LIVE wins or transactions.
 const liveFallbackPool:GiftItem[] = [{"id":"durovscap-1","name":"Durov's Cap","price_stars":30339,"image":"assets/gifts/durovscap-1/model.png","rarity":"Мифический","image_status":"available"},{"id":"mightyarm-1","name":"Mighty Arm","price_stars":9289,"image":"assets/gifts/mightyarm-1/model.png","rarity":"Эпический","image_status":"available"},{"id":"kissedfrog-1","name":"Kissed Frog","price_stars":4149,"image":"assets/gifts/kissedfrog-1/model.png","rarity":"Редкий","image_status":"available"},{"id":"genielamp-1","name":"Genie Lamp","price_stars":2724,"image":"assets/gifts/genielamp-1/model.png","rarity":"Редкий","image_status":"available"},{"id":"trappedheart-1","name":"Trapped Heart","price_stars":1399,"image":"assets/gifts/trappedheart-1/model.png","rarity":"Необычный","image_status":"available"},{"id":"flyingbroom-1","name":"Flying Broom","price_stars":929,"image":"assets/gifts/flyingbroom-1/model.png","rarity":"Необычный","image_status":"available"},{"id":"berrybox-1","name":"Berry Box","price_stars":681,"image":"assets/gifts/berrybox-1/model.png","rarity":"Необычный","image_status":"available"},{"id":"snowglobe-1","name":"Snow Globe","price_stars":551,"image":"assets/gifts/snowglobe-1/model.png","rarity":"Необычный","image_status":"available"},{"id":"libertyfigure-1","name":"Liberty Figure","price_stars":465,"image":"assets/gifts/libertyfigure-1/model.png","rarity":"Обычный","image_status":"available"},{"id":"cloverpin-1","name":"Clover Pin","price_stars":443,"image":"assets/gifts/cloverpin-1/model.png","rarity":"Обычный","image_status":"available"},{"id":"spicedwine-1","name":"Spiced Wine","price_stars":448,"image":"assets/gifts/spicedwine-1/model.png","rarity":"Обычный","image_status":"available"},{"id":"jesterhat-1","name":"Jester Hat","price_stars":438,"image":"assets/gifts/jesterhat-1/model.png","rarity":"Обычный","image_status":"available"}];
-type LiveExample={gifts:GiftItem[];stars:number;tick:number};
-function nextLiveExample(pool:GiftItem[],previous?:LiveExample):LiveExample {
+// Clearly labelled FAKE showcase (see caption under the row). Never real wins, never touches balance or API.
+type FakeDrop={id:number;gift?:GiftItem;stars:number};
+let fakeDropSeq=0;
+function nextFakeDrop(pool:GiftItem[]):FakeDrop {
   const source=pool.length?pool:liveFallbackPool;
-  const oldIds=new Set(previous?.gifts.map(g=>g.id)??[]);
-  const fresh=source.filter(g=>!oldIds.has(g.id));
-  const choices=[...(fresh.length>=3?fresh:source)];
-  const gifts:GiftItem[]=[];
-  while(choices.length&&gifts.length<3){
-    const i=Math.floor(Math.random()*choices.length);
-    gifts.push(choices.splice(i,1)[0]);
-  }
-  const count=19801;
-  let stars=200+Math.floor(Math.random()*count);
-  if(stars===previous?.stars)stars=200+(stars-200+1)%count;
-  return {gifts,stars,tick:(previous?.tick??0)+1};
+  const id=++fakeDropSeq;
+  if(Math.random()<0.5)return {id,gift:source[Math.floor(Math.random()*source.length)],stars:0};
+  return {id,stars:100+Math.floor(Math.random()*19901)};
 }
 function LiveFeed({items}:{items:any[]}) {
   const {gifts}=React.useContext(CatalogContext);
   const prizes=items.filter((item:any)=>Number(item.star_reward)>0 || !!item.gift_image);
   const pool=useMemo(()=>gifts.filter(g=>!!g.image&&g.image_status!=="star"&&!g.id.startsWith("stars-")),[gifts]);
-  const [example,setExample]=useState(()=>nextLiveExample(pool));
+  const [drops,setDrops]=useState<FakeDrop[]>(()=>[nextFakeDrop(pool)]);
   useEffect(()=>{
-    setExample(previous=>nextLiveExample(pool,previous));
-    const timer=window.setInterval(()=>setExample(previous=>nextLiveExample(pool,previous)),1000);
+    const timer=window.setInterval(()=>setDrops(prev=>[nextFakeDrop(pool),...prev].slice(0,6)),1000);
     return()=>window.clearInterval(timer);
   },[pool]);
   return <div className="live-feed-v24" aria-label="Реальные выигрыши и отдельная случайная демонстрация призов">
@@ -981,13 +973,13 @@ function LiveFeed({items}:{items:any[]}) {
           : <img className="live-v24-gift" key={item.id} src={`/${String(item.gift_image)}`} alt="NFT"/>)}
       </div>
     </div>
-    <div className="live-v24-row live-v24-demo" aria-label="Демонстрация случайных призов, не реальные выигрыши">
-      <div className="live-v24-label" title="Случайные демонстрационные призы, не реальные выигрыши">ДЕМО</div>
-      <div className="live-v24-track live-v24-animate" key={example.tick}>
-        {example.gifts.map(g=><img className="live-v24-gift" key={g.id} src={imageSrc(g)} alt={g.name} title={g.name}/>)}
-        <div className="live-v24-stars"><CurrencyIcon/><b>{fmt(example.stars)}</b></div>
+    <div className="live-v24-track">
+        {drops.map(d=>d.gift
+          ? <img className="live-v24-gift live-v24-animate" key={d.id} src={imageSrc(d.gift)} alt={d.gift.name} title={d.gift.name}/>
+          : <div className="live-v24-stars live-v24-animate" key={d.id}><CurrencyIcon/><b>{fmt(d.stars)}</b></div>)}
       </div>
     </div>
+    <div className="live-v24-caption">Фейк-выигрыши: демонстрация, не реальные победы игроков</div>
   </div>;
 }
 
