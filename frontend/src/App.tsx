@@ -256,6 +256,8 @@ export default function App() {
   const [withdrawDestination,setWithdrawDestination]=useState("");
   const [withdrawInventoryUids,setWithdrawInventoryUids]=useState<string[]>([]);
   const [withdrawals,setWithdrawals]=useState<WithdrawalRequest[]>([]);
+  const [withdrawalsState,setWithdrawalsState]=useState<"loading"|"ready"|"error">("loading");
+  const withdrawalRevision=useRef(0);
   const [liveDrops,setLiveDrops]=useState<any[]>([]);
   const [token,setToken]=useState("");
   const [profile,setProfile]=useState<any>(null);
@@ -325,10 +327,21 @@ export default function App() {
   useEffect(()=>{
     if(!token)return;
     let alive=true;
+    let withdrawalInFlight=false;
+    const refreshWithdrawals=async()=>{
+      if(withdrawalInFlight)return;
+      withdrawalInFlight=true;
+      const revision=withdrawalRevision.current;
+      try{
+        const requests=await api<WithdrawalRequest[]>("/api/withdrawals");
+        if(alive&&revision===withdrawalRevision.current){setWithdrawals(requests);setWithdrawalsState("ready");}
+      }catch{if(alive&&revision===withdrawalRevision.current)setWithdrawalsState("error");}
+      finally{withdrawalInFlight=false;}
+    };
     const refresh=async()=>{
       try {
         await Promise.allSettled([
-          api<WithdrawalRequest[]>("/api/withdrawals").then(requests=>{if(alive)setWithdrawals(requests);}),
+          refreshWithdrawals(),
           api<any[]>("/api/live").then(events=>{if(alive)setLiveDrops(events);}),
           api<any>("/api/me").then(me=>{if(alive)setInventory((me.inventory||[]).map((x:any)=>({uid:String(x.inventory_id),giftId:x.gift_id,acquiredAt:Date.parse(x.acquired_at)})));})
         ]);
@@ -620,9 +633,12 @@ export default function App() {
       const res:any=await api("/api/withdrawals",body);
       if(withdrawType==="stars")setBalance(res.balance??(balance-amount));
       else withdrawInventoryUids.forEach(removeOwned);
-      setWithdrawals(old=>[{id:res.id,asset_type:withdrawType,amount:withdrawType==="stars"?amount:null,gift_id:null,gift_count:withdrawType==="gift"?withdrawInventoryUids.length:0,status:"pending",submitted_at:res.submitted_at,destination},...old]);
+      withdrawalRevision.current++;
+      setWithdrawalsState("ready");
+      setWithdrawals(old=>[{id:res.id,asset_type:withdrawType,amount:withdrawType==="stars"?amount:null,gift_id:null,gift_count:withdrawType==="gift"?withdrawInventoryUids.length:0,status:"pending",submitted_at:res.submitted_at,destination},...old.filter(w=>w.id!==res.id)]);
       setWithdrawOpen(false);
-      notify("Заявка принята. Статус доступен в разделе «Вывести» → «Мои заявки».");
+      setPageHistory([]);setPage("profile");setActiveCase(null);
+      notify("Заявка принята. Статус — в профиле, в разделе «Заявки на выплату».");
     } catch(e:any){notify("Не удалось создать заявку: "+e.message);}
   }
 
@@ -722,7 +738,7 @@ export default function App() {
       {page==="case-detail" && activeCase && <CaseDetail c={activeCase} opening={opening} roulettePrizes={roulettePrizes} rouletteFastMode={rouletteFastMode} openCount={caseOpenCount} fastMode={caseFastMode} onFastModeChange={setCaseFastMode} onCountChange={setCaseOpenCount} freeCaseRemainingMs={freeCaseRemainingMs} onOpen={(fast)=>openCase(activeCase,fast)} onRouletteComplete={finishRoulette}/>}
       {page==="shop" && <ShopScreen items={shopItems} search={search} setSearch={setSearch} sort={sort} setSort={setSort} rarity={rarityFilter} setRarity={setRarityFilter} onGift={(g)=>openGiftModal(g)} />}
       {page==="leaders" && <LeadersScreen />}
-      {page==="profile" && <ProfileScreen name={displayName} photoUrl={photoUrl} inventory={inventory} onTopup={showTopup} onWithdraw={startStarsWithdrawal} onGift={(g,uid)=>openGiftModal(g,uid)} onAdmin={()=>go("admin")} isAdmin={adminAllowed}/> }
+      {page==="profile" && <ProfileScreen name={displayName} photoUrl={photoUrl} inventory={inventory} withdrawals={withdrawals} withdrawalsState={withdrawalsState} onTopup={showTopup} onWithdraw={startStarsWithdrawal} onGift={(g,uid)=>openGiftModal(g,uid)} onAdmin={()=>go("admin")} isAdmin={adminAllowed}/> }
       {page==="upgrade" && <UpgradeScreen inventory={inventory} initialUid={upgradeInitialUid} token={token} onBack={goBack} onRemove={removeOwned} onAdd={addOwned} onToast={notify} onBusy={setUpgradeBusy}/>}
       {page==="slots" && <SlotsScreen balance={balance} setBalance={setBalance} token={token} onToast={notify} onPrize={addOwned}/>}
       {page==="mines" && <MinesScreen balance={balance} setBalance={setBalance} token={token} onToast={notify}/>}
@@ -885,7 +901,7 @@ export default function App() {
           <label>{withdrawType==="stars"?"TON-адрес или контакт для связи":"Telegram username получателя"}</label>
           <input className="amount-input" value={withdrawDestination} onChange={e=>setWithdrawDestination(e.target.value)} placeholder={withdrawType==="stars"?"UQ... или @username":"@username"}/>
           <Button onClick={submitWithdrawal}>Отправить заявку</Button>
-          <p className="modal-hint">Минимальные условия: 1 500 ⭐ или 2 NFT-подарка. После подачи появится запись с датой и текущим статусом. Отправка выполняется вручную после проверки; срок не гарантируется.</p><details className="withdraw-history" open><summary>Мои заявки · {withdrawals.length}</summary>{withdrawals.length?withdrawals.map(w=><WithdrawalProgress key={w.id} request={w}/>):<p className="modal-hint">Заявок пока нет</p>}</details>
+          <p className="modal-hint">Минимальные условия: 1 500 ⭐ или 2 NFT-подарка. После подачи статус появится в профиле. Отправка выполняется вручную после проверки; срок не гарантируется.</p>
         </div>
       </Modal>}
     </AnimatePresence>
@@ -922,33 +938,59 @@ function WithdrawalProgress({request:w}:{request:WithdrawalRequest}) {
   const label=["Отклонено","Ожидает подтверждения","Подтверждено","Ожидание выплаты","Выплачено"][stage];
   return <article className="withdraw-progress-card" aria-label={`Заявка ${w.id}: ${label}`}>
     <div className="withdraw-progress-head"><div><b>{w.asset_type==="stars"?`${fmt(w.amount||0)} Stars`: `${w.gift_count||1} NFT`}</b><small>#{w.id} · {prettyDate(w.submitted_at)}</small></div><span className={`withdraw-stage stage-${stage}`}>{label}</span></div>
-    <div className="withdraw-progress-bars" aria-hidden="true">{[1,2,3,4].map(step=><span key={step} className={stage===4||step<stage?"done":step===stage?"active":""}><i/></span>)}</div>
+    <div className="withdraw-progress-bars" aria-hidden="true">{[1,2,3,4].map(step=><span key={step} className={stage===4&&step===4?"done finish":stage===4||step<stage?"done":step===stage?"active":""}><i/></span>)}</div>
     <small className="withdraw-progress-detail">{stage===1?"Заявка отправлена администратору":stage===2?"Заявка проверена":stage===3?"Перевод ещё не подтверждён":stage===4?"Администратор отметил перевод выполненным":"Средства возвращены на баланс или в инвентарь"}</small>
   </article>;
 }
 
+// Demonstration prizes are presentation-only; never submitted to the live API.
+function nextLiveExample(pool:GiftItem[],previous?:{gift?:GiftItem;stars:number;tick:number}) {
+  const choices=pool.filter(g=>g.id!==previous?.gift?.id);
+  const available=choices.length?choices:pool;
+  const gift=available.length?available[Math.floor(Math.random()*available.length)]:undefined;
+  // Uniform draw from 200 to 1500, in steps of 10; avoid consecutive repeats.
+  let step=Math.floor(Math.random()*131);
+  if(200+step*10===previous?.stars)step=(step+1)%131;
+  return {gift,stars:200+step*10,tick:(previous?.tick??0)+1};
+}
 function LiveFeed({items}:{items:any[]}) {
   const {gifts}=React.useContext(CatalogContext);
   const prizes=items.filter((item:any)=>Number(item.star_reward)>0 || !!item.gift_image);
-  const examples=gifts.filter(g=>!!g.image&&g.image_status!=="star").slice(0,3);
-  return <div className="live-feed live-feed-prizes" aria-label="LIVE — последние выигрыши">
-    <div className="live-feed-label"><span className="live-dot"/>LIVE</div>
-    <div className="live-feed-content">
-      {!prizes.length&&<span className="live-empty">Пока нет выигрышей</span>}
-      {prizes.slice(0,12).map((item:any)=>item.star_reward
-        ? <motion.div className="live-prize live-prize-stars" key={item.id}
-            initial={{opacity:0,x:12,scale:.9}} animate={{opacity:1,x:0,scale:1}}
-            transition={{duration:.22,ease:"easeOut"}}>
-            <CurrencyIcon/><b>{fmt(item.star_reward)}</b>
-          </motion.div>
-        : <motion.div className="live-prize live-prize-gift" key={item.id}
-            initial={{opacity:0,x:12,scale:.88}} animate={{opacity:1,x:0,scale:1}}
-            transition={{duration:.22,ease:"easeOut"}}>
-            <img src={`/${String(item.gift_image)}`} alt="" loading="lazy"/>
-          </motion.div>
-      )}
+  const pool=useMemo(()=>gifts.filter(g=>!!g.image&&g.image_status!=="star"&&!g.id.startsWith("stars-")),[gifts]);
+  const [example,setExample]=useState(()=>nextLiveExample(pool));
+  const reduced=useReducedMotion();
+  useEffect(()=>{
+    setExample(previous=>nextLiveExample(pool,previous));
+    const timer=window.setInterval(()=>setExample(previous=>nextLiveExample(pool,previous)),4000);
+    return()=>window.clearInterval(timer);
+  },[pool]);
+  return <div className="live-feed live-feed-prizes live-feed-rotating" aria-label="LIVE — последние выигрыши и демонстрация призов">
+    <div className="live-rail-row">
+      <div className="live-feed-label"><span className="live-dot"/>LIVE</div>
+      <div className="live-feed-content" aria-label="Реальные выигрыши">
+        {!prizes.length&&<span className="live-empty">Пока нет выигрышей</span>}
+        {prizes.slice(0,12).map((item:any)=>Number(item.star_reward)>0
+          ? <motion.div className="live-prize live-prize-stars" key={item.id}
+              initial={reduced?false:{opacity:0,x:12,scale:.9}} animate={{opacity:1,x:0,scale:1}}
+              transition={{duration:.22,ease:"easeOut"}}>
+              <CurrencyIcon/><b>{fmt(item.star_reward)}</b>
+            </motion.div>
+          : <motion.div className="live-prize live-prize-gift" key={item.id}
+              initial={reduced?false:{opacity:0,x:12,scale:.88}} animate={{opacity:1,x:0,scale:1}}
+              transition={{duration:.22,ease:"easeOut"}}>
+              <img src={`/${String(item.gift_image)}`} alt="NFT" loading="lazy"/>
+            </motion.div>)}
+      </div>
     </div>
-    {!!examples.length&&<div className="live-examples" aria-label="Примеры подарков из каталога, не выигрыши"><small>Примеры</small>{examples.map(g=><img key={g.id} src={imageSrc(g)} alt={g.name}/>)}</div>}
+    <div className="live-rail-row live-demo-row" aria-label="Демонстрационные призы, не реальные выигрыши">
+      <div className="live-feed-label live-demo-label">ДЕМО</div>
+      <motion.div className="live-demo-content" key={example.tick}
+        initial={reduced?false:{opacity:0,y:3}} animate={{opacity:1,y:0}} transition={{duration:.2}}>
+        {example.gift&&<div className="live-prize live-prize-gift" title={example.gift.name}><img src={imageSrc(example.gift)} alt={example.gift.name}/></div>}
+        <div className="live-prize live-prize-stars"><CurrencyIcon/><b>{fmt(example.stars)}</b></div>
+      </motion.div>
+      <small className="live-demo-caption">Примеры призов</small>
+    </div>
   </div>;
 }
 
@@ -1239,7 +1281,7 @@ function LeadersScreen() {
   </div>;
 }
 
-function ProfileScreen({name,photoUrl,inventory,onTopup,onWithdraw,onGift,onAdmin,isAdmin}:{name:string;photoUrl:string;inventory:OwnedGift[];onTopup:()=>void;onWithdraw:()=>void;onGift:(gift:GiftItem,uid:string)=>void;onAdmin:()=>void;isAdmin:boolean}) {
+function ProfileScreen({name,photoUrl,inventory,withdrawals,withdrawalsState,onTopup,onWithdraw,onGift,onAdmin,isAdmin}:{name:string;photoUrl:string;inventory:OwnedGift[];withdrawals:WithdrawalRequest[];withdrawalsState:"loading"|"ready"|"error";onTopup:()=>void;onWithdraw:()=>void;onGift:(gift:GiftItem,uid:string)=>void;onAdmin:()=>void;isAdmin:boolean}) {
   const {byId}=React.useContext(CatalogContext);
   const [photoFailed,setPhotoFailed]=useState(false);
   useEffect(()=>setPhotoFailed(false),[photoUrl]);
@@ -1252,6 +1294,11 @@ function ProfileScreen({name,photoUrl,inventory,onTopup,onWithdraw,onGift,onAdmi
     <div className="reference-actions"><Button onClick={onTopup}>Пополнить</Button><Button kind="ghost" onClick={onWithdraw}>Вывести</Button></div>
     <section className={`reference-inventory ${inventory.length?"has-gifts":""}`} aria-label="Инвентарь">
       {inventory.length?<div className="reference-inventory-grid">{inventory.map(item=>{const gift=byId.get(item.giftId);return gift?<motion.button key={item.uid} className="reference-inventory-item" whileTap={{scale:.96}} onClick={()=>onGift(gift,item.uid)} aria-label={`${gift.name}, ${fmt(gift.price_stars)} звёзд`}><GiftImage gift={gift}/><b>{gift.name}</b><StarPrice value={gift.price_stars}/></motion.button>:null;})}</div>:<span className="reference-inventory-empty">Инвентарь пуст</span>}
+    </section>
+    <section className="profile-withdrawals" aria-labelledby="profile-withdrawals-heading">
+      <div className="profile-withdrawals-heading"><h2 id="profile-withdrawals-heading">Заявки на выплату</h2><span>{withdrawals.length}</span></div>
+      {withdrawalsState==="error"&&<p className="profile-withdrawals-note" role="status">Не удалось обновить статусы. Повторяем запрос.</p>}
+      {withdrawals.length ? <div className="profile-withdrawals-list">{withdrawals.map(w=><WithdrawalProgress key={w.id} request={w}/>)}</div> : withdrawalsState!=="error"&&<p className="profile-withdrawals-note">{withdrawalsState==="loading"?"Загрузка заявок…":"Заявок пока нет"}</p>}
     </section>
     {isAdmin&&<button className="text-action profile-admin" onClick={onAdmin}><Settings size={14}/>Админ-панель</button>}
   </div>;

@@ -502,3 +502,26 @@ button:not(:disabled):active { filter:brightness(1.13); }
 @keyframes withdraw-sweep{0%{width:0;opacity:1}85%{width:100%;opacity:1}100%{width:100%;opacity:0}}
 @media(prefers-reduced-motion:reduce){.withdraw-progress-bars>span.active>i{animation:none;width:65%}.case-preview-pending{animation:none}}
 @media(max-width:360px){.live-examples img:last-child{display:none}.slots-symbol>.gift-image{width:54px;height:54px}}
+
+/* 0.6.23 — payout tracking in profile */
+.reference-profile .reference-inventory:not(.has-gifts){height:136px;min-height:136px;border-radius:18px}
+.reference-profile .reference-inventory.has-gifts{min-height:0;border-radius:18px}
+.profile-withdrawals{display:flex;flex-direction:column;gap:12px;padding:4px 0 12px;min-width:0}
+.profile-withdrawals-heading{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.profile-withdrawals-heading h2{margin:0;color:#f3f4f6;font-size:17px;line-height:1.3;font-weight:650;letter-spacing:-.2px}
+.profile-withdrawals-heading>span{font-size:12px;color:#a9b0bb;background:#292d33;border-radius:8px;padding:4px 9px}
+.profile-withdrawals-list{display:grid;gap:9px;min-width:0}
+.profile-withdrawals-note{font-size:12px;line-height:1.5;color:#a4abb5;margin:0;padding:15px 12px;background:#202326;border:1px solid #30343a;border-radius:13px;text-align:center}
+.profile-withdrawals .withdraw-progress-card{margin:0;padding:14px;gap:12px;border-radius:14px;background:#22262a;border-color:#353a40}
+.profile-withdrawals .withdraw-progress-head b{font-size:15px}
+.profile-withdrawals .withdraw-progress-head small,.profile-withdrawals .withdraw-progress-detail{font-size:11px}
+.profile-withdrawals .withdraw-stage{font-size:12px}
+.profile-withdrawals .withdraw-progress-bars{gap:6px}
+.profile-withdrawals .withdraw-progress-bars>span{height:6px;border-radius:4px;background:#3b4148}
+.profile-withdrawals .withdraw-progress-bars>span>i{display:block;width:100%;height:100%;transform:scaleX(0);transform-origin:left center;opacity:1;border-radius:4px;background:#f3ca76}
+.profile-withdrawals .withdraw-progress-bars>span.done>i{transform:scaleX(1);background:#8bc9a2}
+.profile-withdrawals .withdraw-progress-bars>span.active>i{animation:profile-payout-loop 1.8s linear infinite;will-change:transform,opacity}
+.profile-withdrawals .withdraw-progress-bars>span.finish>i{animation:profile-payout-finish .8s ease-out both}
+@keyframes profile-payout-loop{0%{transform:scaleX(0);opacity:1}82%{transform:scaleX(1);opacity:1}100%{transform:scaleX(1);opacity:0}}
+@keyframes profile-payout-finish{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@media(prefers-reduced-motion:reduce){.profile-withdrawals .withdraw-progress-bars>span.active>i{animation:none;transform:scaleX(.65)}.profile-withdrawals .withdraw-progress-bars>span.finish>i{animation:none}}

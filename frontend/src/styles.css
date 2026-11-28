@@ -750,3 +750,18 @@
 .slots-rules{display:flex;justify-content:space-between;gap:10px;color:#9da0ab;font-size:10px}.slots-rules b{color:#f2d58e}
 .slots-note{display:flex;align-items:flex-start;gap:8px;color:#858994;font-size:10px;line-height:1.5;padding:0 2px}.slots-note svg{flex:0 0 15px;margin-top:1px;color:#b8bfce}
 @media(max-width:360px){.slots-machine{padding:11px 8px 9px}.slots-reels{gap:5px;padding:5px}.slots-win-line{gap:5px;padding:0 5px}.slots-symbol>.gift-image{width:51px;height:51px}.slots-machine-top{font-size:8px}}
+
+/* 0.6.22 — separate rotating demonstration, always visible beside the real feed. */
+.global-live-wrap .live-feed-prizes.live-feed-rotating{height:auto;min-height:0;display:flex;flex-direction:column;align-items:stretch;gap:2px;padding:2px 0 4px;overflow:hidden}
+.live-feed-rotating .live-rail-row{display:flex;align-items:center;gap:10px;min-width:0;min-height:44px}
+.live-feed-rotating .live-feed-label{flex:0 0 43px;justify-content:flex-start;font-size:10px;letter-spacing:.4px}
+.live-feed-rotating .live-feed-content{height:44px;min-width:0;flex:1}
+.live-feed-rotating .live-prize{height:38px}
+.live-feed-rotating .live-prize-gift,.live-feed-rotating .live-prize-gift img{width:38px;min-width:38px;height:38px}
+.live-feed-rotating .live-prize-stars{height:30px;min-width:60px;padding:0 9px;background:#37313e;border:1px solid #ffffff15}
+.live-feed-rotating .live-prize-stars b{font-size:12px}
+.live-feed-rotating .live-empty{font-size:11px;color:#a2a5ad}
+.live-feed-rotating .live-demo-row{min-height:38px;border-top:1px solid #ffffff0d}
+.live-feed-rotating .live-demo-label{color:#c8c0a8}
+.live-demo-content{display:flex;align-items:center;gap:7px;min-width:0;flex:0 0 auto}
+.live-demo-caption{font-size:10px;color:#a4a7ae;line-height:1.2;min-width:0}
