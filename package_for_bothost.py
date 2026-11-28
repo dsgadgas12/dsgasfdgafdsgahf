@@ -9,6 +9,21 @@ REQUIRED_FRONTEND = ROOT / "webapp" / "index.html"
 if not REQUIRED_FRONTEND.is_file():
     raise SystemExit("Сначала соберите frontend: build-for-bothost.ps1 или ./build-for-bothost.sh")
 
+# Do not silently package an old webapp bundle that lacks the current LIVE demo rail
+# and withdrawal-request UI from frontend/src/App.tsx.
+js_bundles = list((ROOT / "webapp" / "assets").glob("*.js"))
+if not js_bundles:
+    raise SystemExit("В webapp/assets нет JS-сборки. Сначала выполните build-for-bothost.sh")
+bundle_text = "\\n".join(path.read_text(encoding="utf-8", errors="ignore") for path in js_bundles)
+required_ui_markers = ("ДЕМО", "Мои заявки", "Заявки на вывод", "Выполнено вручную")
+missing_ui_markers = [marker for marker in required_ui_markers if marker not in bundle_text]
+if missing_ui_markers:
+    raise SystemExit(
+        "webapp устарел и не содержит обновлённый интерфейс: "
+        + ", ".join(missing_ui_markers)
+        + ". Пересоберите frontend командой ./build-for-bothost.sh"
+    )
+
 for catalog_name in ("gifts.json", "cases.json"):
     if not (ROOT / "backend" / "catalog" / catalog_name).is_file():
         raise SystemExit(f"Отсутствует файл каталога backend/catalog/{catalog_name}")

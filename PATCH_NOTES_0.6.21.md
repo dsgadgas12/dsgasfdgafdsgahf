@@ -1,14 +1,23 @@
-# 0.6.21 — LIVE, отправка приглашений, интерфейс и вывод
+# CloudeGift 0.6.21 — PAWW base + LIVE demo rail and withdrawal UI
 
-- LIVE: сервер публикует реальные выигрыши кейсов, бесплатного кейса, слотов, апгрейда, мин и Crash. Для анимаций введены идентификаторы событий и подтверждение завершения; если клиент пропал, событие становится доступно через 60 секунд. Отдельная полоса «Примеры» показывает предметы каталога, а не выигрыши. Старые записи без отметки задержки остаются видимыми.
-- Приглашения: счётчик 0/3 обновляется сразу после успешного callback Telegram и ответа сервера. Проверка подписки не блокирует отображение прогресса. Один успешный callback засчитывается один раз. Telegram не раскрывает список получателей в этом callback, поэтому уникальность трёх чатов и отправку нескольким адресатам за один вызов нельзя подтвердить по имеющимся данным.
-- Кейсы: вместо текста «Подготавливаем…» остаётся визуальное превью. Блокировка повторного открытия и дедупликация инвентаря по ID.
-- Слоты: новая спокойная тёмная палитра, точное выравнивание центрального ряда, меньше DOM-элементов на барабане, защита от повторного клика, видимый действующий шанс 10%.
-- Мины: защита от параллельных действий; вероятность следующей безопасной клетки показана до хода. Вероятности игр не менялись; исходная логика распределения мин сохранена. Удалено неверное утверждение о фиксированных шансах 100/300 Stars в кейсах, поскольку сервер пересчитывает веса в доступном пуле.
-- Вывод: pending → processing (ручное подтверждение) → awaiting_payout (через 6 секунд как отображаемая стадия) → paid (только ручная отметка фактической выплаты). Четыре сегмента; активный анимирован. Оплаченная запись скрывается из пользовательского списка через 12 секунд, но сохраняется в базе и админке. Отклонение возвращает резерв. Администратор должен подтвердить заявку перед отметкой о выплате.
+## Merged
+- PAWW 0.6.20 remains the base: backend, database schema, Telegram authentication,
+  payment handling, withdrawal API, admin authorization, catalog and hosting entrypoint are preserved.
+- Added the visually separate LIVE / ДЕМО feed from the LIVE source. The ДЕМО rail is explicitly
+  labeled and is client-side presentation only: it does not create wins, balance changes or API requests.
+- Kept the PAWW withdrawal flow: user request form, “Мои заявки” status history, and admin
+  “Заявки на вывод” controls (processing / paid / rejected).
+- `bot_host.py` now accepts either `SERVER_PORT` or `PORT`; `SERVER_PORT` takes precedence.
 
-## Проверка
+## Important build note
+The source frontend is updated, but this package must be rebuilt before deployment.
+Run `./build-for-bothost.sh` (Linux/macOS) or `build-for-bothost.ps1` (Windows) on a machine
+with Node.js 20+ and npm. The package script now refuses to create the final Bot-Hosting ZIP
+if the compiled bundle does not contain the LIVE demo rail and withdrawal UI markers.
 
-- Python: компиляция backend/main.py, проверка каталога, тесты на временной SQLite: пакетное открытие и публикация LIVE, запрет раскрытия чужого события, выигрыш слотов, идемпотентность приглашений, стадии заявки и запрет выплаты до подтверждения.
-- npm registry недоступен (EAI_AGAIN). Включён обновлённый webapp: исходник App.tsx транспилирован установленным TypeScript, переиспользованы библиотечные модули исходной сборки; JS прошёл синтаксическую проверку Node. Полная сборка Vite, строгая типизация и визуальная проверка не выполнены; браузер в среде заблокировал навигацию. При наличии npm выполните стандартную сборку перед production-деплоем.
-- Не проверены реальные Telegram callback, подписка и перевод средств. Автоматической выплаты нет; стадия «Ожидание выплаты» не означает перевод.
+## Verification
+- Source-level checks: LIVE demo rail and user/admin withdrawal components are present.
+- Backend routes: `/api/withdrawals`, `/api/admin/withdrawals`,
+  `/api/admin/withdrawals/{request_id}/status`, and `/api/live` are present in PAWW backend.
+- A fresh Vite build could not be completed in the preparation environment because npm registry
+  access timed out. Do not deploy the existing `webapp` bundle until the build script succeeds.

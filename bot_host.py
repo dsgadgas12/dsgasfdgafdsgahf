@@ -31,7 +31,7 @@ def validate_environment() -> int:
     if not (WEBAPP_DIR / "index.html").is_file():
         raise RuntimeError(f"Сборка Mini App отсутствует. Распакуйте ZIP целиком: рядом с {ROOT / 'bot_host.py'} должна быть папка webapp с index.html и assets.")
     try:
-        port = int(os.getenv("SERVER_PORT", "8000"))
+        port = int(os.getenv("SERVER_PORT") or os.getenv("PORT") or "8000")
     except ValueError as exc:
         raise RuntimeError("SERVER_PORT должен быть числом") from exc
     if not 1 <= port <= 65535:

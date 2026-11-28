@@ -750,3 +750,10 @@
 .slots-rules{display:flex;justify-content:space-between;gap:10px;color:#9da0ab;font-size:10px}.slots-rules b{color:#f2d58e}
 .slots-note{display:flex;align-items:flex-start;gap:8px;color:#858994;font-size:10px;line-height:1.5;padding:0 2px}.slots-note svg{flex:0 0 15px;margin-top:1px;color:#b8bfce}
 @media(max-width:360px){.slots-machine{padding:11px 8px 9px}.slots-reels{gap:5px;padding:5px}.slots-win-line{gap:5px;padding:0 5px}.slots-symbol>.gift-image{width:51px;height:51px}.slots-machine-top{font-size:8px}}
+
+/* LIVE 0.6.18: separate demo rail, visually matched to the real LIVE feed. */
+.live-feed-stack { display:flex; flex-direction:column; min-width:0; }
+.live-feed-stack .live-feed-prizes { border-bottom:1px solid var(--line); }
+.live-feed-stack .live-feed-demo-row { border-bottom:0; border-top:0; }
+.live-feed-stack .live-feed-demo-row .live-feed-label { color:#c9bca4; }
+.live-feed-stack .live-feed-demo-row .live-feed-content { border-left:1px solid #ffffff0d; padding-left:8px; }
